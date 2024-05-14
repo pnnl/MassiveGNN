@@ -1,8 +1,8 @@
 
-from prefetch import Prefetch
-from prefetch_efficient import PrefetchEfficient
-from graphsage import DistSAGE
-from gat import GAT
+from prefetch.prefetch import Prefetch
+from prefetch.prefetch_efficient import PrefetchEfficient
+from models.graphsage import DistSAGE
+from models.gat import GAT
 import utils
 from concurrent.futures import ThreadPoolExecutor
 import queue as q
@@ -115,12 +115,6 @@ class Trainer:
             process_time = end_process - start_process
             end_total = time.time()
             total_time = end_total - start_total
-            # func_stats = yappi.get_func_stats()
-            # if self.g.rank() == 0:
-            #     print("Total process time: ", process_time)
-        
-            # You can print the stats here or return them
-            # func_stats.print_all() 
             return fetch_time, process_time, total_time, True
         except StopIteration:
             return 0, 0, 0, False
@@ -142,8 +136,6 @@ class Trainer:
             start = time.time()
             self.next_batch_inputs.put(batch_inputs)
             time_put = time.time() - start
-
-            # print("Total time to _fetch_and_process: ", time_prefetch + time_put + batch_array_time + time_input_nodes)
         else:
             self.next_batch_inputs.put(self.prefetcher.prefetch_with_eviction(input_nodes_array, batch_inputs))
               
@@ -169,7 +161,6 @@ class Trainer:
         wait_for_thread = []
         eval_time = []
         test_acc = 0.0
-        # print(f"Minibatches_in_epoch, {math.ceil(len(self.train_nid) / self.args.batch_size)}")
         dataloader_iter = self.dataloader.__iter__()
         # set the number of threads for pytorch
         for _ in range(self.args.num_epochs):
@@ -188,10 +179,8 @@ class Trainer:
             thread_process_time = 0
             wait_for_thread_time = 0
             thread_total_time = 0
-            # outer_sample_time = 0
             step_time = []
             start = time.time()
-            # dgl.utils.set_num_threads(16)
             with self.model.join():
                 # if device is cpu, set the number of threads to 16
                 if self.device == th.device("cpu"):
@@ -252,13 +241,13 @@ class Trainer:
                         )
                         sample_speed = np.mean(iter_tput[-self.args.log_every :])
                         mean_step_time = np.mean(step_time[-self.args.log_every :])
-                        # print(
-                        #     f"Part {self.g.rank()} | Epoch {epoch:05d} | Step {step:05d}"
-                        #     f" | Loss {loss.item():.4f} | Train Acc {acc.item():.4f}"
-                        #     f" | Speed (samples/sec) {sample_speed:.4f}"
-                        #     f" | GPU {gpu_mem_alloc:.1f} MB | "
-                        #     f"Mean step time {mean_step_time:.3f}s"
-                        # )
+                        print(
+                            f"Part {self.g.rank()} | Epoch {epoch:05d} | Step {step:05d}"
+                            f" | Loss {loss.item():.4f} | Train Acc {acc.item():.4f}"
+                            f" | Speed (samples/sec) {sample_speed:.4f}"
+                            f" | GPU {gpu_mem_alloc:.1f} MB | "
+                            f"Mean step time {mean_step_time:.3f}s"
+                        )
                     # check time spent on waiting for data
                     start_thread_wait = time.time()
                     if future is not None:
@@ -277,11 +266,9 @@ class Trainer:
             toc = time.time()
             print(
                 f"Part {self.g.rank()}, epoch: {epoch}, Epoch Time(s): {toc - tic:.4f}, "
-                # f"hit_rate: {self.prefetcher.calculate_hit_rate():.4f}, miss_rate: {self.prefetcher.calculate_miss_rate():.4f},"
                 f" next_minibatch_process_time: {thread_process_time:.4f}, next_minibatch_fetch_time: {thread_fetch_time:.4f},"
                 f" submit_task_time: {submit_task_time:.4f}, take_from_queue: {take_from_queue:.4f},"
                 f" next_minibatch_total_time: {thread_total_time:.4f}, next_minibatch_wait_time: {wait_for_thread_time:.4f},"
-                # f" outer_sample_time: {outer_sample_time:.4f},"
                 f" sample+data_copy: {sample_time:.4f}, forward: {forward_time:.4f},"
                 f" backward: {backward_time:.4f}, update: {update_time:.4f}, "
                 f" #seeds: {num_seeds}, #inputs: {num_inputs}, "
@@ -291,7 +278,6 @@ class Trainer:
             backward_time_list.append(backward_time)
             update_time_list.append(update_time)
             sample_time_list.append(sample_time)
-            # outer_sample_list.append(outer_sample_time)
             wait_for_thread.append(wait_for_thread_time)
 
             if epoch % self.args.eval_every == 0 or epoch == self.args.num_epochs:
@@ -314,7 +300,6 @@ class Trainer:
             'backward_time': np.sum(backward_time_list), 
             'update_time': np.sum(update_time_list),
             'first_minibatch_sample_time': first_minibatch_sample_time, 
-            'outer_sample_time': np.sum(outer_sample_list),
             'sample_time': np.sum(sample_time_list), 
             'wait_for_thread_time': np.sum(wait_for_thread),
             'eval_time': np.sum(eval_time), 

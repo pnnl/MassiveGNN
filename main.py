@@ -11,36 +11,11 @@ import utils
 from trainer import Trainer
 import gc
 import datetime
-
-def set_numa_affinity(rank):
-    numa_bindings = {
-        0: set(range(0, 32)).union(range(128, 160)),  # Ranks 0 covers NUMA nodes 0 and 1
-        1: set(range(32, 64)).union(range(160, 192)), # Ranks 1 covers NUMA nodes 2 and 3
-        2: set(range(64, 96)).union(range(192, 224)), # Ranks 2 covers NUMA nodes 4 and 5
-        3: set(range(96, 128)).union(range(224, 256)),# Ranks 3 covers NUMA nodes 6 and 7
-    }
-    
-    if rank in numa_bindings:
-        cpu_ids = numa_bindings[rank]
-        os.sched_setaffinity(0, cpu_ids)
-
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-    
+   
 def main(args):
     """
     Main function.
     """
-    # pr = cProfile.Profile()
-    # pr.enable()
-    debug = True
     host_name = socket.gethostname()
     print(f"{host_name}: Initializing DistDGL.")
     dgl.distributed.initialize(args.ip_config)
@@ -49,7 +24,7 @@ def main(args):
     local_rank = args.local_rank
     # get pytorch's local rank
     print(f"Local rank: {args.local_rank}")
-    set_numa_affinity(local_rank)
+    utils.set_numa_affinity(local_rank)
     print(f"CPU affinity of process {os.getpid()} rank {local_rank}: {os.sched_getaffinity(0)}")
     print(f"{host_name}: Initializing DistGraph.")
     g = dgl.distributed.DistGraph(args.graph_name, part_config=args.part_config)
@@ -113,16 +88,14 @@ def main(args):
     # Pack data.
     in_feats = g.ndata["features"].shape[1]
     data = train_nid, val_nid, test_nid, in_feats, n_classes, g
-    trainer = Trainer(args, device, data, utils.get_halo_in_hops(g, pb, train_nid, args.num_layers, debug=debug))
-    print("Trainer Initialized.")
+    trainer = Trainer(args, device, data, utils.get_halos(g, pb, train_nid, args.num_layers))
+    print(f"Rank {g.rank()} Trainer and Prefetcher Initialized.")
 
     # Train and evaluate.
     (epoch_time, test_acc, forward_time, backward_time, update_time, sample_time, eval_time, 
      hit_rate, miss_rate, alpha, period, threshold, absolute_total_time,
      prefetch_time) = trainer.run()
 
-    # print(f"Part {g.rank()}, hit rate: {hit_rate}, miss rate: {miss_rate}")
-    # find average hit rate and miss rate across ranks
     print(
         f"Summary of node classification(GraphSAGE): GraphName "
         f"{args.graph_name} | TrainEpochTime(mean) {epoch_time:.4f} "
@@ -151,7 +124,6 @@ def main(args):
             f"| BackwardTime {absolute_total_time['backward_time']:.4f}s"
             f"| UpdateTime {absolute_total_time['update_time']:.4f}s"
             f"| FirstMinibatchSampleTime {absolute_total_time['first_minibatch_sample_time']:.4f}s"
-            f"| OuterSampleTime {absolute_total_time['outer_sample_time']:.4f}s"
             f"| SampleTime {absolute_total_time['sample_time']:.4f}s"
             f"| WaitForThreadTime {absolute_total_time['wait_for_thread_time']:.4f}s"
             f"| EvalTime {absolute_total_time['eval_time']:.4f}s"
@@ -185,16 +157,6 @@ def main(args):
                 f"| SampleTime+Data_Copy {sample_time_tensor:.4f} | EvalTime {eval_time_tensor:.4f}"
                 "\n"
             )
-    # - for profiling
-    # rank = g.rank()
-    # pr.disable()
-    # pr.dump_stats(os.path.join(args.profile_dir, f'cpu_{rank}.prof'))
-    # # - for text dump
-    # print(f"Rank {rank} dumping stats to cpu_{rank}.txt")
-    # with open(os.path.join(args.profile_dir, f'cpu_{rank}.txt'), 'w') as output_file:
-    #     sys.stdout = output_file
-    #     pr.print_stats(sort='time')
-    #     sys.stdout = sys.__stdout__
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Distributed GraphSAGE.")
@@ -265,12 +227,12 @@ if __name__ == "__main__":
         "--num_trainer_threads", type=int, default=1, help="number of trainer threads"
     )
     parser.add_argument(
-        "--hit_rate_flag", type=str2bool, default=False, help="Enable or disable hit rate flag. Accepts: True or False"
+        "--hit_rate_flag", type=utils.str2bool, default=False, help="Enable or disable hit rate flag. Accepts: True or False"
     )
     parser.add_argument(
         "--model", type=str, default="sage", help="Model to use for training. Accepts: graphsage or gat"
     )
-    parser.add_argument("--eviction", type=str2bool, default=True, help="Enable or disable eviction. Accepts: True or False")
+    parser.add_argument("--eviction", type=utils.str2bool, default=True, help="Enable or disable eviction. Accepts: True or False")
     parser.add_argument("--num_heads", type=int, default=0, help="Number of attention heads")
     args = parser.parse_args()
     if args.model == "gat":

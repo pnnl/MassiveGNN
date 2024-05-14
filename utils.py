@@ -1,49 +1,10 @@
 import torch as th
-import numpy as np
 import dgl
 
-def get_halo_in_hops(g, pb, train_nid, num_hops, debug=False):
-    
+def get_halos(g, pb, train_nid, num_hops): 
     remote_lnid = th.nonzero(g.local_partition.ndata["inner_node"] == False).squeeze()
     print(f"part {g.rank()} Number of remote nodes: {len(remote_lnid)}")
-
-    if debug:
-        print("Debug mode: returning all remote nodes")
-        return g.local_partition.ndata[dgl.NID][remote_lnid].detach().numpy()
-    src, dst = g.local_partition.edges()
-    
-    # convert train_nid to local node ids
-    train_lnid = pb.nid2localnid(train_nid, pb.partid).detach().numpy()
-    
-    hop_halo_nodes_set = set()
-    current_nodes_set = set(train_lnid.tolist())
-    visited_nodes_set = set()
-
-    print(f"Part {g.rank()}: Finding halo nodes in {num_hops} hops")
-    for _ in range(num_hops):
-        next_nodes_set = set()
-        
-        # Find indices where dst nodes are in the current_nodes_set
-        current_dst_indices = np.where(np.isin(dst, list(current_nodes_set)))[0]
-        current_src_nodes = src[current_dst_indices]
-        
-        # Exclude nodes that point back to already visited nodes
-        mask = ~np.isin(current_src_nodes, visited_nodes_set)
-        current_src_nodes = current_src_nodes[mask]
-
-        for node in current_src_nodes:
-            if node.item() in remote_lnid:
-                hop_halo_nodes_set.add(node.item())
-            else:
-                next_nodes_set.add(node.item())
-        # print(f"Number of unique halo nodes after {h} hops: {len(hop_halo_nodes_set)}")
-        visited_nodes_set.update(current_nodes_set)
-        current_nodes_set = next_nodes_set
-
-    print(f"Number of unique halo nodes after {num_hops} hops: {len(hop_halo_nodes_set)}")
-
-    return g.local_partition.ndata[dgl.NID][list(hop_halo_nodes_set)].detach().numpy()
-
+    return g.local_partition.ndata[dgl.NID][remote_lnid].detach().numpy()
 
 def calculate_mean(param, device):
     param_tensor = th.tensor(param).to(device)
@@ -62,3 +23,25 @@ def percentage(part, whole):
 def compute_acc(pred, labels):
     labels = labels.long()
     return (th.argmax(pred, dim=1) == labels).float().sum() / len(pred)
+
+def set_numa_affinity(rank):
+    numa_bindings = {
+        0: set(range(0, 32)).union(range(128, 160)),  # Ranks 0 covers NUMA nodes 0 and 1
+        1: set(range(32, 64)).union(range(160, 192)), # Ranks 1 covers NUMA nodes 2 and 3
+        2: set(range(64, 96)).union(range(192, 224)), # Ranks 2 covers NUMA nodes 4 and 5
+        3: set(range(96, 128)).union(range(224, 256)),# Ranks 3 covers NUMA nodes 6 and 7
+    }
+    
+    if rank in numa_bindings:
+        cpu_ids = numa_bindings[rank]
+        os.sched_setaffinity(0, cpu_ids)
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
