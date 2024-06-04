@@ -33,7 +33,7 @@ MODEL=${14}
 JOBID=$SLURM_JOB_ID
 
 DATA_DIR="/pscratch/sd/s/sark777/Distributed_DGL/dataset"
-PROJ_PATH="/global/homes/s/sark777/Distributed_DGL/src/prefetch/prefetchv4"
+PROJ_PATH="/global/u1/s/sark777/MassiveGNN"
 PARTITION_DIR="/pscratch/sd/s/sark777/Distributed_DGL/partitions/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts/${DATASET_NAME}.json"
 RPC_LOG_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/blocktimes/prefetchv4/logs_${SLURM_JOB_ID}"
 NODELIST=$(scontrol show hostnames $SLURM_JOB_NODELIST) # get list of nodes
@@ -129,7 +129,7 @@ if [ "$MODEL" == "sage" ]; then
     --part_config $PARTITION_DIR \
     --ip_config  $IP_CONFIG_FILE \
     --num_omp_threads $OMP_THREADS \
-    "$PYTHON_PATH node_classification_halo_nodes_degree_fetch.py --graph_name $DATASET_NAME \
+    "$PYTHON_PATH baseline_prefetch/main.py --graph_name $DATASET_NAME \
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
     --summary_filepath $SUMMARYFILE \
@@ -153,7 +153,7 @@ if [ "$MODEL" == "gat" ]; then
     --part_config $PARTITION_DIR \
     --ip_config  $IP_CONFIG_FILE \
     --num_omp_threads $OMP_THREADS \
-    "$PYTHON_PATH node_classification_halo_nodes_degree_fetch.py --graph_name $DATASET_NAME \
+    "$PYTHON_PATH baseline_prefetch/main.py --graph_name $DATASET_NAME \
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
     --summary_filepath $SUMMARYFILE \

@@ -3,7 +3,7 @@ import torch as th
 import time
 from concurrent.futures import ThreadPoolExecutor
 import numba
-from lookup import lookup
+from .lookup import lookup
 
 class Prefetch:
     """

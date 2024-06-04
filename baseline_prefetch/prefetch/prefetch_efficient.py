@@ -3,7 +3,7 @@ import torch as th
 import time
 from concurrent.futures import ThreadPoolExecutor
 import numba
-from lookup import lookup, update_normal_scores, update_normal_score_of_evicted_nodes
+from .lookup import lookup, update_normal_scores, update_normal_score_of_evicted_nodes
 
 class PrefetchEfficient:
     """

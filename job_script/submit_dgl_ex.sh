@@ -46,10 +46,10 @@ fi
 
 for DATASET in $DATASET_NAME; do
     if [ "$MODEL" == "gat" ]; then 
-         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/scratch_built/cache_evict/${LOGNAME}/gat/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
+         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/scratch_built/massivegnn/${LOGNAME}/gat/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
     fi
     if [ "$MODEL" == "sage" ]; then
-         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/scratch_built/cache_evict/${LOGNAME}/overlap/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
+         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/scratch_built/massivegnn/${LOGNAME}/sage/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
     fi
    
     IP_CONFIG_DIR="${LOGS_DIR}/ip_config"

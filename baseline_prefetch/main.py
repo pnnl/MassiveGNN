@@ -1,3 +1,7 @@
+import sys
+import os
+# Add the project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import argparse
 from collections import defaultdict
 import socket
@@ -6,12 +10,10 @@ import numpy as np
 import torch as th
 import tqdm
 import cProfile
-import sys, os
 import utils
 from trainer import Trainer
-import gc
 import datetime
-   
+
 def main(args):
     """
     Main function.

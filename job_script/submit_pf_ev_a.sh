@@ -2,14 +2,16 @@
 pf=(0.25)
 periods=(0)
 alphas=(0)
+
+# CMD arguments
+MODE=$1
 HIT_RATE=$2
 MODEL=$3
 DATASET_NAME="ogbn-products"
-NUM_NODES="4"
+NUM_NODES="2"
 QUEUE="debug"
 
-# take cpu or gpu as argument
-MODE=$1
+
 if [ -z "$MODE" ]; then
     echo "Please provide mode"
     exit 1

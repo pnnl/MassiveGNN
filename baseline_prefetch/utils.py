@@ -1,5 +1,6 @@
 import torch as th
 import dgl
+import os
 
 def get_halos(g, pb, train_nid, num_hops): 
     remote_lnid = th.nonzero(g.local_partition.ndata["inner_node"] == False).squeeze()
