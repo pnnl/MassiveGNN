@@ -1,18 +1,16 @@
 #!/bin/bash
 #SBATCH -A m1302
-#SBATCH --constraint=gpu
+#SBATCH -t 00:30:00
+#SBATCH --constraint=cpu
+#SBATCH -q debug
 #SBATCH --mail-type=begin,end,fail
 #SBATCH --mail-user=asarkar1@iastate.edu
 
-ulimit -c unlimited
-ulimit -v unlimited
 echo $LD_LIBRARY_PATH
 module load cudatoolkit/11.7
 echo $LD_LIBRARY_PATH
 source activate dgl-dev-gpu-117
 PYTHON_PATH=$(which python)
-
-echo "Setting Project path..."
 
 DATASET_NAME=$1
 PARTITION_METHOD=$2
@@ -20,26 +18,16 @@ NUM_NODES=$3
 SAMPLER_PROCESSES=$4
 SUMMARYFILE=$5
 IP_CONFIG_FILE=$6
-GPUS_PER_NODE=$7 # number of GPUs per node; also number of trainers
-BACKEND=$8
-PROFILE=$9
-EVICTION_PERIOD=${10}
-PREFETCH_FRACTION=${11}
-ALPHA=${12}
-HIT_RATE=${13}
-MODEL=${14}
-TOTAL_GPUS=$(($GPUS_PER_NODE * $NUM_NODES)) # total number of GPUs
+BACKEND=$7
+PROFILE_DIR=$8
+TRAINERS=$9
 JOBID=$SLURM_JOB_ID
+MODEL=${10}
 
 DATA_DIR="/pscratch/sd/s/sark777/Distributed_DGL/dataset"
-PROJ_PATH="/global/homes/s/sark777/Distributed_DGL/src/prefetch/prefetchv4"
+PROJ_PATH="/global/u1/s/sark777/MassiveGNN"
 PARTITION_DIR="/pscratch/sd/s/sark777/Distributed_DGL/partitions/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts/${DATASET_NAME}.json"
-PROFILE_DIR="/pscratch/sd/s/sark777/Distributed_DGL/prefetch_replicate_cprofiles/while/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts"
-RPC_LOG_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/blocktimes/prefetchv4/logs_${SLURM_JOB_ID}"
-# create PROFILE_DIR if it doesn't exist
-if [ ! -d "$PROFILE_DIR" ]; then
-  mkdir -p $PROFILE_DIR
-fi
+RPC_LOG_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/blocktimes/baseline/logs_${SLURM_JOB_ID}"
 
 NODELIST=$(scontrol show hostnames $SLURM_JOB_NODELIST) # get list of nodes
 
@@ -47,26 +35,25 @@ NODELIST=$(scontrol show hostnames $SLURM_JOB_NODELIST) # get list of nodes
 SUMMARYFILE="${SUMMARYFILE}_${SLURM_JOB_ID}.txt"
 # append job id to IP_CONFIG_FILE
 IP_CONFIG_FILE="${IP_CONFIG_FILE}_${SLURM_JOB_ID}.txt"
+
 # write all parameters to summary file
 echo "Assigned Nodes: $NODELIST" >> $SUMMARYFILE
 echo "Dataset: $DATASET_NAME" >> $SUMMARYFILE
 echo "Partition Method: $PARTITION_METHOD" >> $SUMMARYFILE
 echo "Number of Nodes: $NUM_NODES" >> $SUMMARYFILE
+echo "Using $BACKEND backend" >> $SUMMARYFILE
 echo "Number of Sampler Processes: $SAMPLER_PROCESSES" >> $SUMMARYFILE
-echo "Total GPUs: $TOTAL_GPUS" >> $SUMMARYFILE
+echo "Number of Trainers: $TRAINERS" >> $SUMMARYFILE
 echo "Total Nodes: $NUM_NODES" >> $SUMMARYFILE
 echo "GPUs per Node: $GPUS_PER_NODE" >> $SUMMARYFILE
 echo "Data Directory: $DATA_DIR" >> $SUMMARYFILE
 echo "Project Path: $PROJ_PATH" >> $SUMMARYFILE
 echo "Partition Directory: $PARTITION_DIR" >> $SUMMARYFILE
 echo "IP Config File: $IP_CONFIG_FILE" >> $SUMMARYFILE
-echo "Profile: $PROFILE" >> $SUMMARYFILE
-echo "Eviction Period: $EVICTION_PERIOD" >> $SUMMARYFILE
-echo "Prefetch Fraction: $PREFETCH_FRACTION" >> $SUMMARYFILE
-echo "Alpha: $ALPHA" >> $SUMMARYFILE
-echo "Hit Rate: $HIT_RATE" >> $SUMMARYFILE
-echo "Writing logs to: $RPC_LOG_DIR" >> $SUMMARYFILE
-echo "Start Time: $(date +'%T.%N')" >> $SUMMARYFILE
+echo "Profile Directory: $PROFILE_DIR" >> $SUMMARYFILE
+echo "" >> $SUMMARYFILE
+# log current time in hh:mm:ss format
+echo "Start Time: $(date +"%T")" >> $SUMMARYFILE
 echo "" >> $SUMMARYFILE
 
 echo "Generating ip_config.txt..."
@@ -88,7 +75,6 @@ done
 
 # Print the contents of the ipconfig file
 cat $IP_CONFIG_FILE
-
 # assert that the number of lines in ip_config.txt is equal to NUM_NODES
 NUM_IPS=$(wc -l < $IP_CONFIG_FILE)
 if [ "$NUM_IPS" -ne "$NUM_NODES" ]; then
@@ -96,71 +82,41 @@ if [ "$NUM_IPS" -ne "$NUM_NODES" ]; then
     exit 1
 fi
 
-# if alpha and period is 0, set eviction to False
-if [ "$EVICTION_PERIOD" -eq 0 ] && [ "$ALPHA" -eq 0 ]; then
-    EVICTION=False
-else
-    EVICTION=True
-fi
-# get total number of cores on the node (multiply by number of sockets)
-CORES_PER_SOCKET=$(lscpu | grep "Core(s) per socket" | awk '{print $4}')
-SOCKETS=$(lscpu | grep "Socket(s)" | awk '{print $2}')
-TOTAL_CORES=$(($CORES_PER_SOCKET * $SOCKETS))
-TRAINERS=$GPUS_PER_NODE
-
-CORES_PER_TRAINER=$(($TOTAL_CORES / $TRAINERS))
-OMP_THREADS=$(($CORES_PER_TRAINER)) # OMP threads = number of cores per trainer
-# numba threads = OMP threads - 1
-NUMBA_THREADS=$(($OMP_THREADS)) # all cores to numba threads as gpu is used for training
-
-echo "Total Cores: $TOTAL_CORES"
-echo "Cores per Trainer: $CORES_PER_TRAINER"
-echo "OMP Threads: $OMP_THREADS"
-echo "Numba Threads: $NUMBA_THREADS"
-
+# Delete the line with 127.0.1.1
+sed -i '/^127\.0\.1\.1/d' $IP_CONFIG_FILE
 echo "JOBID: $JOBID"
 
 if [ "$MODEL" == "sage" ]; then
-    echo "Running SAGE model..."
     $PYTHON_PATH $PROJ_PATH/launch.py \
     --workspace $PROJ_PATH \
-    --num_trainers $GPUS_PER_NODE \
+    --num_trainers $TRAINERS \
     --num_samplers $SAMPLER_PROCESSES \
     --num_servers 1 \
     --part_config $PARTITION_DIR \
     --ip_config  $IP_CONFIG_FILE \
-    --num_omp_threads $OMP_THREADS \
-    "$PYTHON_PATH node_classification_halo_nodes_degree_fetch.py --graph_name $DATASET_NAME \
+    --num_omp_threads 16 \
+    "$PYTHON_PATH baseline/node_classification.py --graph_name $DATASET_NAME \
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
-    --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
-    --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA --profile_dir $PROFILE_DIR \
-    --rpc_log_dir $RPC_LOG_DIR \
-    --eviction $EVICTION \
-    --num_numba_threads $NUMBA_THREADS \
-    --hit_rate_flag $HIT_RATE \
-    --model $MODEL"
+    --summary_filepath $SUMMARYFILE \
+    --profile_dir $PROFILE_DIR \
+    --rpc_log_dir $RPC_LOG_DIR"
 fi
 
 if [ "$MODEL" == "gat" ]; then
-    echo "Running GAT model..."
     $PYTHON_PATH $PROJ_PATH/launch.py \
     --workspace $PROJ_PATH \
-    --num_trainers $GPUS_PER_NODE \
+    --num_trainers $TRAINERS \
     --num_samplers $SAMPLER_PROCESSES \
     --num_servers 1 \
     --part_config $PARTITION_DIR \
     --ip_config  $IP_CONFIG_FILE \
-    --num_omp_threads $OMP_THREADS \
-    "$PYTHON_PATH node_classification_halo_nodes_degree_fetch.py --graph_name $DATASET_NAME \
+    --num_omp_threads 16 \
+    "$PYTHON_PATH baseline/node_classification.py --graph_name $DATASET_NAME \
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
-    --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
-    --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA --profile_dir $PROFILE_DIR \
+    --summary_filepath $SUMMARYFILE \
+    --profile_dir $PROFILE_DIR \
     --rpc_log_dir $RPC_LOG_DIR \
-    --eviction $EVICTION \
-    --num_numba_threads $NUMBA_THREADS \
-    --hit_rate_flag $HIT_RATE \
-    --model $MODEL \
     --num_heads 2"
 fi

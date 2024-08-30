@@ -150,7 +150,6 @@ def main(args):
             f.write(f"alpha: {alpha}, period: {period}, threshold: {threshold}")
             f.write(
                 "\n"
-                f"Debug {debug}"
                 "\n"
                 f"Summary of node classification({args.model}): GraphName, prefetch_fraction: {args.prefetch_fraction}, "
                 f"{args.graph_name} | TrainEpochTime(mean) {epoch_time_tensor:.4f} | TotalEpochTime {total_epoch_time_tensor:.4f}"

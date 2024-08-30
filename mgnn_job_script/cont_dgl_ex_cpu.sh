@@ -1,21 +1,11 @@
 #!/bin/bash
 #SBATCH -A m1302
+#SBATCH --image=sark777/dgl_aws:latest
 #SBATCH --constraint=cpu
 #SBATCH --mail-type=begin,end,fail
 #SBATCH --mail-user=asarkar1@iastate.edu
 
-ulimit -c unlimited
-ulimit -v unlimited
-echo $LD_LIBRARY_PATH
-source activate dgl-dev-gpu-117
-module load cudatoolkit/11.7
-echo $LD_LIBRARY_PATH
-PYTHON_PATH=$(which python)
-echo "Python Path: $PYTHON_PATH"
-# source activate dgl-nightly
-
-echo "Setting Project path..."
-
+# Parse input arguments
 DATASET_NAME=$1
 PARTITION_METHOD=$2
 NUM_NODES=$3
@@ -32,18 +22,18 @@ HIT_RATE=${13}
 MODEL=${14}
 JOBID=$SLURM_JOB_ID
 
+# Set paths and directories
 DATA_DIR="/pscratch/sd/s/sark777/Distributed_DGL/dataset"
 PROJ_PATH="/global/u1/s/sark777/MassiveGNN"
 PARTITION_DIR="/pscratch/sd/s/sark777/Distributed_DGL/partitions/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts/${DATASET_NAME}.json"
 RPC_LOG_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/blocktimes/prefetchv4/logs_${SLURM_JOB_ID}"
 NODELIST=$(scontrol show hostnames $SLURM_JOB_NODELIST) # get list of nodes
 
-# append job id to SUMMARYFILE and .txt
+# Append job id to filenames
 SUMMARYFILE="${SUMMARYFILE}_${SLURM_JOB_ID}.txt"
-# append job id to IP_CONFIG_FILE
 IP_CONFIG_FILE="${IP_CONFIG_FILE}_${SLURM_JOB_ID}.txt"
 
-# write all parameters to summary file
+# Write parameters to summary file
 echo "Assigned Nodes: $NODELIST" >> $SUMMARYFILE
 echo "Dataset: $DATASET_NAME" >> $SUMMARYFILE
 echo "Partition Method: $PARTITION_METHOD" >> $SUMMARYFILE
@@ -93,18 +83,16 @@ if [ "$NUM_IPS" -ne "$NUM_NODES" ]; then
     exit 1
 fi
 
-# Delete the line with 127.0.1.1
-# sed -i '/^127\.0\.1\.1/d' $IP_CONFIG_FILE
 echo "JOBID: $JOBID"
 
-# if alpha and period is 0, set eviction to False
+# If alpha and period is 0, set eviction to False
 if [ "$EVICTION_PERIOD" -eq 0 ] && [ "$ALPHA" -eq 0 ]; then
     EVICTION=False
 else
     EVICTION=True
 fi
 
-# get total number of cores on the node (multiply by number of sockets)
+# Get total number of cores on the node (multiply by number of sockets)
 CORES_PER_SOCKET=$(lscpu | grep "Core(s) per socket" | awk '{print $4}')
 SOCKETS=$(lscpu | grep "Socket(s)" | awk '{print $2}')
 TOTAL_CORES=$(($CORES_PER_SOCKET * $SOCKETS))
@@ -121,28 +109,28 @@ echo "Numba Threads: $NUMBA_THREADS"
 
 # echo "Setting num_omp_threads to 64"
 if [ "$MODEL" == "sage" ]; then
-    $PYTHON_PATH $PROJ_PATH/launch.py \
+    srun -N $NUM_NODES shifter /bin/bash -c "
+    set -e  # Exit on any command failure
+    source /opt/conda/etc/profile.d/conda.sh
+    conda activate dgl_053124
+    echo \$LD_LIBRARY_PATH
+    PYTHON_PATH=\$(which python)
+    echo 'Python Path: \$PYTHON_PATH'
+    
+    # Debugging
+    echo 'Running launch.py...'
+    
+    \$PYTHON_PATH $PROJ_PATH/launch.py \
     --workspace $PROJ_PATH \
     --num_trainers $TRAINERS \
     --num_samplers $SAMPLER_PROCESSES \
     --num_servers 1 \
     --part_config $PARTITION_DIR \
-    --ip_config  $IP_CONFIG_FILE \
+    --ip_config $IP_CONFIG_FILE \
     --num_omp_threads $OMP_THREADS \
-    "$PYTHON_PATH baseline_prefetch/main.py --graph_name $DATASET_NAME \
-    --backend $BACKEND \
-    --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
-    --summary_filepath $SUMMARYFILE \
-    --profile_dir $PROFILE_DIR \
-    --prefetch_fraction $PREFETCH_FRACTION \
-    --eviction_period $EVICTION_PERIOD \
-    --alpha $ALPHA \
-    --rpc_log_dir $RPC_LOG_DIR \
-    --eviction $EVICTION \
-    --num_trainer_threads $OMP_THREADS \
-    --num_numba_threads $NUMBA_THREADS \
-    --hit_rate_flag $HIT_RATE \
-    --model $MODEL"
+    \"\$PYTHON_PATH baseline_prefetch/main.py --graph_name $DATASET_NAME --backend $BACKEND --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 --summary_filepath $SUMMARYFILE --profile_dir $PROFILE_DIR --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA --rpc_log_dir $RPC_LOG_DIR --eviction $EVICTION --num_trainer_threads $OMP_THREADS --num_numba_threads $NUMBA_THREADS --hit_rate_flag $HIT_RATE --model $MODEL\" \
+    || { echo 'launch.py failed'; exit 1; }
+    "
 fi
 if [ "$MODEL" == "gat" ]; then
     $PYTHON_PATH $PROJ_PATH/launch.py \

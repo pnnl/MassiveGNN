@@ -93,13 +93,13 @@ class Prefetch:
     def calculate_hit_rate(self):
         total = self.hit + self.miss
         if total == 0:
-            return 0  # or another default value you'd like to use when there's no data
+            return 0  
         return round(self.hit / total * 100)
 
     def calculate_miss_rate(self):
         total = self.hit + self.miss
         if total == 0:
-            return 0  # or another default value you'd like to use when there's no data
+            return 0 
         return round(self.miss / total * 100)
 
     def update_score(self, missed_minibatch_nodes):
@@ -113,14 +113,16 @@ class Prefetch:
         start_prefetch_compute = time.time()
         self.counter += 1
 
-        # create a mapping from prefetch_ids to prefetch_features indices
+        # Sort the prefetch_ids
         sort_start = time.time()
         if self.sorted is False:
             self.sort_prefetch()
         sort_end = time.time()
 
+        # Set number of threads for numba
         numba.set_num_threads(self.num_numba_threads)
         lookup_start = time.time()
+        # Lookup in the prefetch buffer
         hit_indices, missed_minibatch_idx, feature_indices, self.eviction_score = lookup(input_nodes_array,
                                                                                          self.prefetch_ids,
                                                                                          self.buffer_length,
@@ -129,10 +131,12 @@ class Prefetch:
         lookup_end = time.time()
 
         copy_features_start = time.time()
+        # Copy the features from the prefetch buffer
         batch_inputs[hit_indices] = self.prefetch_features[feature_indices]
         copy_features_end = time.time()
 
         start_rpc = time.time()
+        # RPC for missed minibatch nodes (halo + local nodes)
         batch_inputs[missed_minibatch_idx] = self.rpc(input_nodes_array[missed_minibatch_idx])
         end_rpc = time.time()
 

@@ -1,17 +1,9 @@
-import os
-import psutil
-
-# Set LD_LIBRARY_PATH to CUDA 11.7 libraries
-# os.environ['LD_LIBRARY_PATH'] = '/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/math_libs/11.7/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/lib64:' + os.environ.get('LD_LIBRARY_PATH', '')
-
-# Print the updated LD_LIBRARY_PATH
-print("LD_LIBRARY_PATH from inside script:", os.environ['LD_LIBRARY_PATH'])
-
-
+import os, sys
+# Add the project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import argparse
 import socket
 import time
-
 import dgl
 import dgl.nn.pytorch as dglnn
 import numpy as np
@@ -21,10 +13,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 import tqdm
 import cProfile
-import sys, os
 import math
-from sage import DistSAGE
-from gat import DistGAT
+from models.graphsage import DistSAGE
+from models.gat import GAT
 
 
 # from scalene import scalene_profiler
@@ -154,7 +145,7 @@ def run(args, device, data):
     print("Total number of minibatches: ", num_mini_batches * args.num_epochs)
     dataloader_iter = dataloader.__iter__()
     for _ in range(args.num_epochs):
-        dgl.distributed.rpc.set_training_phase(True)
+        # dgl.distributed.rpc.set_training_phase(True)
         epoch += 1
         tic = time.time()
         # Various time statistics.
@@ -176,7 +167,7 @@ def run(args, device, data):
                 if step == num_mini_batches - 1:
                     dataloader_iter = dataloader.__iter__() # if last step, reset the dataloader for the next epoch
                 tic_step = time.time()
-                dgl.distributed.rpc.set_training_phase(True)
+                # dgl.distributed.rpc.set_training_phase(True)
                 start = time.time() 
                 input_nodes, seeds, blocks = next(dataloader_iter)         
                 sample_time += time.time() - start
@@ -245,7 +236,7 @@ def run(args, device, data):
         rpc_time_list.append(rpc_time)
 
         if epoch % args.eval_every == 0 or epoch == args.num_epochs:
-            dgl.distributed.rpc.set_training_phase(False)
+            # dgl.distributed.rpc.set_training_phase(False)
             start = time.time()
             val_acc, test_acc = evaluate(
                 model.module,
@@ -298,7 +289,7 @@ def main(args):
     print(f"{host_name}: Initializing DistGraph.")
     g = dgl.distributed.DistGraph(args.graph_name, part_config=args.part_config)
     print(f"Rank of {host_name}: {g.rank()}")
-    dgl.distributed.rpc.set_log_dir(args.rpc_log_dir)
+    # dgl.distributed.rpc.set_log_dir(args.rpc_log_dir)
     # Split train/val/test IDs for each trainer.
     pb = g.get_partition_book()
     if "trainer_id" in g.ndata:
@@ -479,7 +470,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.003)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument(
-        "--local_rank", type=int, help="get rank of the process"
+        "--local-rank", type=int, help="get rank of the process"
     )
     parser.add_argument(
         "--pad-data",

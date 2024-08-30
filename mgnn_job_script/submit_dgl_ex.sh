@@ -10,7 +10,7 @@ DATASET_NAME=$7
 NUM_NODES=$8
 MODEL=$9    # pass 'gat' or 'sage' as argument
 QUEUE=${10}
-NUM_TRAINERS="4"
+NUM_TRAINERS="1"
 NUM_SAMPLER_PROCESSES="0"
 PARTITION_METHOD="metis"
 
@@ -46,10 +46,10 @@ fi
 
 for DATASET in $DATASET_NAME; do
     if [ "$MODEL" == "gat" ]; then 
-         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/scratch_built/massivegnn/${LOGNAME}/gat/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
+         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/release/massivegnn/${LOGNAME}/gat/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
     fi
     if [ "$MODEL" == "sage" ]; then
-         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/scratch_built/massivegnn/${LOGNAME}/sage/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
+         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/release/massivegnn/${LOGNAME}/sage/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
     fi
    
     IP_CONFIG_DIR="${LOGS_DIR}/ip_config"
@@ -111,7 +111,7 @@ for DATASET in $DATASET_NAME; do
                                     TIME="00:40:00"
                                 fi
                             else
-                                TIME="00:30:00"
+                                TIME="01:00:00"
                             fi
                         fi
                     fi

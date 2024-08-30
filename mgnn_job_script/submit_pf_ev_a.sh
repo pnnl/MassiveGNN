@@ -1,5 +1,5 @@
 #!/bin/bash
-pf=(0.25)
+pf=(1.0)
 periods=(0)
 alphas=(0)
 
@@ -8,8 +8,8 @@ MODE=$1
 HIT_RATE=$2
 MODEL=$3
 DATASET_NAME="ogbn-products"
-NUM_NODES="2"
-QUEUE="debug"
+NUM_NODES="2 4 8"
+QUEUE="regular"
 
 
 if [ -z "$MODE" ]; then
