@@ -35,8 +35,25 @@ Follow the instructions provided on the [DGL official installation page](https:/
 
 ## Running MassiveGNN
 
-1. Partition Graph using DGL
-2. To run MassiveGNN on a distributed system, modify the job scripts provided in the repo based on your cluster.
+1. ### Partition graph  
+    This step partitions the graph dataset using the specified method and number of parts. Open Graph Benchmark (OGB) datasets are downloaded automatically.
+
+    #### Steps:
+
+    1. **Navigate to the Partition Directory**:
+        ```bash
+        cd ~/MassiveGNN/slurm/partition
+        ```
+
+    2. **Modify SLURM Directives**:  
+        Open the `partition.sh` script and adjust the SLURM directives (e.g., `account`, `time limit`, `constraint`) to match your environment’s requirements.
+
+    3. **Submit the Job**:
+        ```bash
+        sbatch partition.sh ogbn-arxiv metis "1 2" ~/MassiveGNN/dataset ~/MassiveGNN/partition/partition_graph.py ~/MassiveGNN/partitions
+        ```
+2. ### Run MassiveGNN  
+    To run MassiveGNN on a distributed system, modify the job scripts provided in the repo based on your cluster.
 
 ## How to Cite
 If you use MassiveGNN in your research, please cite our paper:
