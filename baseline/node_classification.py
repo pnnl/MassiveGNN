@@ -145,7 +145,6 @@ def run(args, device, data):
     print("Total number of minibatches: ", num_mini_batches * args.num_epochs)
     dataloader_iter = dataloader.__iter__()
     for _ in range(args.num_epochs):
-        # dgl.distributed.rpc.set_training_phase(True)
         epoch += 1
         tic = time.time()
         # Various time statistics.
@@ -167,7 +166,6 @@ def run(args, device, data):
                 if step == num_mini_batches - 1:
                     dataloader_iter = dataloader.__iter__() # if last step, reset the dataloader for the next epoch
                 tic_step = time.time()
-                # dgl.distributed.rpc.set_training_phase(True)
                 start = time.time() 
                 input_nodes, seeds, blocks = next(dataloader_iter)         
                 sample_time += time.time() - start
@@ -236,7 +234,6 @@ def run(args, device, data):
         rpc_time_list.append(rpc_time)
 
         if epoch % args.eval_every == 0 or epoch == args.num_epochs:
-            # dgl.distributed.rpc.set_training_phase(False)
             start = time.time()
             val_acc, test_acc = evaluate(
                 model.module,
@@ -289,7 +286,6 @@ def main(args):
     print(f"{host_name}: Initializing DistGraph.")
     g = dgl.distributed.DistGraph(args.graph_name, part_config=args.part_config)
     print(f"Rank of {host_name}: {g.rank()}")
-    # dgl.distributed.rpc.set_log_dir(args.rpc_log_dir)
     # Split train/val/test IDs for each trainer.
     pb = g.get_partition_book()
     if "trainer_id" in g.ndata:
@@ -481,12 +477,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--summary_filepath", type=str, help="path to save summary file"
-    )
-    parser.add_argument(
-        "--profile_dir", type=str, help="path to save profile file"
-    )
-    parser.add_argument(
-        "--rpc_log_dir", type=str, help="path to save rpc log file"
     )
     parser.add_argument(
         "--model", type=str, default="sage", help="Model to use for training. Accepts: graphsage or gat"
