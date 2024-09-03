@@ -45,30 +45,69 @@ To install the required dependencies and DGL (Deep Graph Library), follow the st
 
 ## Running MassiveGNN
 
-1. ### Partition graph  
-    This step partitions the graph dataset using the specified method and number of parts. Open Graph Benchmark (OGB) datasets are downloaded automatically.
+### Partition graph  
+This step partitions the graph dataset using the specified method and number of parts. Open Graph Benchmark (OGB) datasets are downloaded automatically.
 
-    #### Steps:
+#### Steps:
 
-    1. Navigate to the Partition Directory:
-        ```bash
-        cd ~/MassiveGNN/slurm/partition
-        ```
+1. Navigate to the Partition Directory:
+    ```bash
+    cd ~/MassiveGNN/slurm/partition
+    ```
 
-    2. Modify SLURM Directives:  
-        Open the `partition.sh` script and adjust the SLURM directives (e.g., `account`, `time limit`, `constraint`) to match your environment’s requirements.
+2. Modify SLURM Directives:  
+    Open the `partition.sh` script and update the SLURM directives (e.g., `account`, `time limit`, `constraint`) to match your environment’s requirements.
 
-    3. Submit the Job:
-        ```bash
-        sbatch partition.sh ogbn-arxiv metis "1 2" ~/MassiveGNN/dataset ~/MassiveGNN/partition/partition_graph.py ~/MassiveGNN/partitions
-        ```
-2. ### Run MassiveGNN  
-    To run MassiveGNN on a distributed system, modify the job scripts provided in the repo based on your cluster.
+3. Submit the Job:
+    ```bash
+    sbatch partition.sh ogbn-arxiv metis "1 2" ~/MassiveGNN/dataset ~/MassiveGNN/partition/partition_graph.py ~/MassiveGNN/partitions
+    ```
+### Run MassiveGNN  
+To run MassiveGNN on a distributed system, follow these steps:
+
+1. Navigate to the MassiveGNN Directory:
+    ```bash
+    cd ~/MassiveGNN/slurm/massivegnn
+    ```
+2. Set Parameters:  
+   The `set_params.sh` script is used to configure the parameters for running MassiveGNN. When you execute `set_params.sh`, it automatically calls `submit.sh`, which in turn submits the job based on your chosen configuration.
+
+3. Choose Between CPU and GPU Execution:  
+   - CPU Training: If you want to run MassiveGNN on CPU nodes, the job will be submitted through the `cpu.sh` script.
+   - GPU Training: If you want to leverage GPUs for training, the job will be submitted through the `gpu.sh` script.
+
+4. Update SLURM Directives:  
+   Before running the scripts, you need to update the SLURM directives in the `cpu.sh` and `gpu.sh` scripts to match your cluster's configuration:
+     - cpu.sh: Update this script with SLURM directives suited for running on CPU nodes (e.g., number of CPUs, memory, etc.).
+     - gpu.sh: Update this script with SLURM directives for GPU nodes (e.g., number of GPUs, GPU type, etc.).
+
+5. Run the script `set_params.sh`:  
+   This script will set the necessary parameters and submit the job to SLURM. Depending on your arguments, the job will either be submitted to run on CPU nodes via `cpu.sh` or on GPU nodes via `gpu.sh`. After updating the SLURM directives, you can execute the `set_params.sh` script to start the job submission process:
+    ```bash
+    bash set_params.sh -h
+    
+    Usage: set_params.sh [MODE] [HIT_RATE] [MODEL] [FP] [DELTA] [ALPHAS] [DATASET_NAME] [NUM_NODES] [QUEUE] [LOGS_DIR]
+
+    Arguments:
+      MODE           Execution mode, either 'cpu' or 'gpu'.
+      HIT_RATE       Hit rate flag, 'true' or 'false'
+      MODEL          Model name to be used. Currently accepts 'sage' or 'gat'.
+      FP             % halo nodes to prefetch while initializing buffer (e.g., '0.5').
+      DELTA          Eviction interval.
+      ALPHAS         Alpha value (e.g., '0.05'). Alpha is calculated as 1-delta.
+      DATASET_NAME   Name of the dataset (e.g., 'ogbn-products').
+      NUM_NODES      Number of nodes to be used (e.g., '2 4 8').
+      QUEUE          SLURM queue name (e.g., 'regular' or 'debug').
+      LOGS_DIR       Path to slurm logs.
+
+    Example:
+      set_params.sh gpu true sage 0.25 32 0.005 ogbn-products '2 4 8' regular '~/MassiveGNN'
+    ```
 
 ## How to Cite
 If you use MassiveGNN in your research, please cite our paper:
 ```
-@inproceedings{yourcitation2024,
+@inproceedings{sarkar2024,
   title={Efficient training of GNN for massively connected distributed graphs using prefetching},
   author={Your Name and Collaborators},
   booktitle={Proceedings of the Conference},

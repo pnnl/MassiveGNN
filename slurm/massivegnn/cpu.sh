@@ -19,14 +19,13 @@ SAMPLER_PROCESSES=$4
 SUMMARYFILE=$5
 IP_CONFIG_FILE=$6
 BACKEND=$7
-PROFILE_DIR=$8
-TRAINERS=$9
+TRAINERS=$8
 JOBID=$SLURM_JOB_ID
-EVICTION_PERIOD=${10}
-PREFETCH_FRACTION=${11}
-ALPHA=${12}
-HIT_RATE=${13}
-MODEL=${14}
+EVICTION_PERIOD=$9
+PREFETCH_FRACTION=${10}
+ALPHA=${11}
+HIT_RATE=${12}
+MODEL=${13}
 
 DATA_DIR="/pscratch/sd/s/sark777/Distributed_DGL/dataset"
 PROJ_PATH="/global/u1/s/sark777/MassiveGNN"
@@ -54,7 +53,6 @@ echo "Data Directory: $DATA_DIR" >> $SUMMARYFILE
 echo "Project Path: $PROJ_PATH" >> $SUMMARYFILE
 echo "Partition Directory: $PARTITION_DIR" >> $SUMMARYFILE
 echo "IP Config File: $IP_CONFIG_FILE" >> $SUMMARYFILE
-echo "Profile Directory: $PROFILE_DIR" >> $SUMMARYFILE
 echo "" >> $SUMMARYFILE
 # log current time in hh:mm:ss format
 echo "Start Time: $(date +"%T")" >> $SUMMARYFILE

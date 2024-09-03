@@ -19,24 +19,18 @@ SUMMARYFILE=$5
 IP_CONFIG_FILE=$6
 GPUS_PER_NODE=$7 # number of GPUs per node; also number of trainers
 BACKEND=$8
-PROFILE=$9
-EVICTION_PERIOD=${10}
-PREFETCH_FRACTION=${11}
-ALPHA=${12}
-HIT_RATE=${13}
-MODEL=${14}
+EVICTION_PERIOD=$9
+PREFETCH_FRACTION=${10}
+ALPHA=${11}
+HIT_RATE=${12}
+MODEL=${13}
 TOTAL_GPUS=$(($GPUS_PER_NODE * $NUM_NODES)) # total number of GPUs
 JOBID=$SLURM_JOB_ID
 
 DATA_DIR="/pscratch/sd/s/sark777/Distributed_DGL/dataset"
 PROJ_PATH="/global/u1/s/sark777/MassiveGNN"
 PARTITION_DIR="/pscratch/sd/s/sark777/Distributed_DGL/partitions/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts/${DATASET_NAME}.json"
-PROFILE_DIR="/pscratch/sd/s/sark777/Distributed_DGL/prefetch_replicate_cprofiles/while/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts"
-RPC_LOG_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/blocktimes/prefetchv4/logs_${SLURM_JOB_ID}"
-# create PROFILE_DIR if it doesn't exist
-if [ ! -d "$PROFILE_DIR" ]; then
-  mkdir -p $PROFILE_DIR
-fi
+
 
 NODELIST=$(scontrol show hostnames $SLURM_JOB_NODELIST) # get list of nodes
 
@@ -57,7 +51,6 @@ echo "Data Directory: $DATA_DIR" >> $SUMMARYFILE
 echo "Project Path: $PROJ_PATH" >> $SUMMARYFILE
 echo "Partition Directory: $PARTITION_DIR" >> $SUMMARYFILE
 echo "IP Config File: $IP_CONFIG_FILE" >> $SUMMARYFILE
-echo "Profile: $PROFILE" >> $SUMMARYFILE
 echo "Eviction Period: $EVICTION_PERIOD" >> $SUMMARYFILE
 echo "Prefetch Fraction: $PREFETCH_FRACTION" >> $SUMMARYFILE
 echo "Alpha: $ALPHA" >> $SUMMARYFILE
@@ -131,8 +124,7 @@ if [ "$MODEL" == "sage" ]; then
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
     --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
-    --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA --profile_dir $PROFILE_DIR \
-    --rpc_log_dir $RPC_LOG_DIR \
+    --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA \
     --eviction $EVICTION \
     --num_numba_threads $NUMBA_THREADS \
     --hit_rate_flag $HIT_RATE \
@@ -153,8 +145,7 @@ if [ "$MODEL" == "gat" ]; then
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
     --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
-    --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA --profile_dir $PROFILE_DIR \
-    --rpc_log_dir $RPC_LOG_DIR \
+    --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA \
     --eviction $EVICTION \
     --num_numba_threads $NUMBA_THREADS \
     --hit_rate_flag $HIT_RATE \

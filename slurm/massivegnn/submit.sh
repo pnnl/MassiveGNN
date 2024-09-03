@@ -1,7 +1,6 @@
 #!/bin/bash
 
 MODE=$1 # pass 'cpu' or 'gpu' as argument
-PROFILE=false
 EVICTION_PERIOD=$4
 PREFETCH_FRACTION=$3
 ALPHA=$5
@@ -10,6 +9,7 @@ DATASET_NAME=$7
 NUM_NODES=$8
 MODEL=$9    # pass 'gat' or 'sage' as argument
 QUEUE=${10}
+LOGS_DIR=${11}
 NUM_TRAINERS="1"
 NUM_SAMPLER_PROCESSES="0"
 PARTITION_METHOD="metis"
@@ -21,24 +21,17 @@ if [ "$MODE" == "cpu" ]; then
         echo "Backend not passed as argument"
         exit 1
     fi
-    if [ "$4" == "profile" ]; then
-        PROFILE=true
-    fi
     SCRIPT="cpu.sh"
     LOGNAME="cpu_${BACKEND}"
     
 elif [ "$MODE" == "gpu" ]; then
     BACKEND=$2
-    SCRIPT="gpu.sh"
     if [ -z "$BACKEND" ]; then
         echo "Backend not passed as argument"
         exit 1
     fi
+    SCRIPT="gpu.sh"
     LOGNAME="gpu_${BACKEND}"
-    # accept an optional argument for profile
-    if [ "$5" == "profile" ]; then
-        PROFILE=true
-    fi
 else
     echo "Invalid mode: choose either 'cpu' or 'gpu'"
     exit 1
@@ -46,10 +39,10 @@ fi
 
 for DATASET in $DATASET_NAME; do
     if [ "$MODEL" == "gat" ]; then 
-         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/release/massivegnn/${LOGNAME}/gat/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
+         LOGS_DIR="$LOGS_DIR/massivegnn_logs/${DATASET}/${LOGNAME}/gat/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
     fi
     if [ "$MODEL" == "sage" ]; then
-         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/release/massivegnn/${LOGNAME}/sage/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
+         LOGS_DIR="$LOGS_DIR/massivegnn_logs/${DATASET}/${LOGNAME}/sage/pf_${PREFETCH_FRACTION}/${EVICTION_PERIOD}_period_${PREFETCH_FRACTION}_fraction_${ALPHA}_alpha"
     fi
    
     IP_CONFIG_DIR="${LOGS_DIR}/ip_config"
@@ -65,10 +58,6 @@ for DATASET in $DATASET_NAME; do
                     ERRFILE="${LOGS_DIR}/${NAME}_%j.err"
                     SUMMARYFILE="${LOGS_DIR}/${NAME}"
                     IP_CONFIG_FILE="${IP_CONFIG_DIR}/ip_config_${NAME}"
-                    PROFILE_DIR="/pscratch/sd/s/sark777/Distributed_DGL/profiles/${PARTITION}/${DATASET}/${MODE}/${BACKEND}/${NODES}_parts/samp_${SAMPLER_PROCESSES}/trainer_${TRAINERS}"
-
-                    # create Profile Directory if it doesn't exist
-                    mkdir -p $PROFILE_DIR
 
                     if [ "$MODEL" == "gat" ]; then
                         if [ "$QUEUE" == "debug" ]; then
@@ -118,15 +107,8 @@ for DATASET in $DATASET_NAME; do
                     echo "-----------------------------------------------------"
                     echo "Submitting job $JOBNAME with the following parameters:"
                     echo "Dataset: $DATASET"
-                    # echo "Partition Method: $PARTITION"
                     echo "Number of Nodes: $NODES"
-                    # echo "Number of Sampler Processes: $SAMPLER_PROCESSES"
-                    # echo "Number of Trainers: $TRAINERS"
-                    # echo "Using $BACKEND backend"
                     echo "Summary file: $SUMMARYFILE"
-                    # echo "Running script: $SCRIPT"
-                    # echo "IP Config file: $IP_CONFIG_FILE"
-                    # echo "Profile Directory: $PROFILE_DIR"
                     echo "Eviction Period: $EVICTION_PERIOD"
                     echo "Prefetch Fraction: $PREFETCH_FRACTION"
                     echo "Alpha: $ALPHA"
@@ -134,10 +116,10 @@ for DATASET in $DATASET_NAME; do
                     # if mode is gpu
                     if [ "$MODE" == "gpu" ]; then
                         CMD="sbatch -N $NODES -q $QUEUE --job-name $JOBNAME -o $OUTFILE -e $ERRFILE --time=$TIME $SCRIPT  $DATASET $PARTITION \
-                        $NODES $SAMPLER_PROCESSES $SUMMARYFILE $IP_CONFIG_FILE $TRAINERS $BACKEND $PROFILE $EVICTION_PERIOD $PREFETCH_FRACTION $ALPHA $HIT_RATE $MODEL"
+                        $NODES $SAMPLER_PROCESSES $SUMMARYFILE $IP_CONFIG_FILE $TRAINERS $BACKEND $EVICTION_PERIOD $PREFETCH_FRACTION $ALPHA $HIT_RATE $MODEL"
                     elif [ "$MODE" == "cpu" ]; then
                         CMD="sbatch -N $NODES -q $QUEUE --job-name $JOBNAME -o $OUTFILE -e $ERRFILE --time=$TIME $SCRIPT $DATASET $PARTITION \
-                        $NODES $SAMPLER_PROCESSES $SUMMARYFILE $IP_CONFIG_FILE $BACKEND $PROFILE_DIR $TRAINERS $EVICTION_PERIOD $PREFETCH_FRACTION $ALPHA $HIT_RATE $MODEL"
+                        $NODES $SAMPLER_PROCESSES $SUMMARYFILE $IP_CONFIG_FILE $BACKEND $TRAINERS $EVICTION_PERIOD $PREFETCH_FRACTION $ALPHA $HIT_RATE $MODEL"
                     fi               
                     # Submit the job
                     eval $CMD

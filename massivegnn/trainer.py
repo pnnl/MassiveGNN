@@ -70,7 +70,6 @@ class Trainer:
         self.next_batch_inputs = q.Queue()
         self.next_batch_labels = q.Queue()
         self.next_batch_blocks = q.Queue()  
-        dgl.distributed.rpc.set_log_dir(self.args.rpc_log_dir)
         
         print("Eviction: ", self.args.eviction)
         if not self.args.eviction:
@@ -168,8 +167,6 @@ class Trainer:
         dataloader_iter = self.dataloader.__iter__()
         # set the number of threads for pytorch
         for _ in range(self.args.num_epochs):
-            dgl.distributed.rpc.set_training_phase(True)
-            dgl.distributed.rpc.set_first_mini_batch(False)
             epoch += 1
             tic = time.time()
             # Various time statistics.
@@ -196,11 +193,9 @@ class Trainer:
                         # if last step, reset the dataloader for the next epoch
                         dataloader_iter = self.dataloader.__iter__()
                     tic_step = time.time()
-                    dgl.distributed.rpc.set_training_phase(True)
                     future = None
                     if step == 0 and epoch == 1:
                         # First minibatch of the first epoch.
-                        dgl.distributed.rpc.set_first_mini_batch(True)
                         batch_inputs, batch_labels, blocks, first_minibatch_sample_time = self._get_first_minibatch(dataloader_iter)
                     else:
                         start_queue = time.time()
@@ -208,7 +203,6 @@ class Trainer:
                         batch_labels = self.next_batch_labels.get()
                         blocks = self.next_batch_blocks.get()
                         take_from_queue = time.time() - start_queue
-                    dgl.distributed.rpc.set_first_mini_batch(False)
                     submit_task_start = time.time()
                     future = self.executor.submit(self._next_minibatch, dataloader_iter, self.g)
                     submit_task_time = time.time() - submit_task_start
@@ -285,7 +279,6 @@ class Trainer:
             wait_for_thread.append(wait_for_thread_time)
 
             if epoch % self.args.eval_every == 0 or epoch == self.args.num_epochs:
-                dgl.distributed.rpc.set_training_phase(False)
                 start = time.time()
                 val_acc, test_acc = self.evaluate()
                 print(

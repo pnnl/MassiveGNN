@@ -207,9 +207,6 @@ if __name__ == "__main__":
         "--summary_filepath", type=str, help="path to save summary file"
     )
     parser.add_argument(
-        "--profile_dir", type=str, help="path to save profile file"
-    )
-    parser.add_argument(
         "--prefetch_fraction", type=float, default=0.5, help="prefetch fraction"
     )
     parser.add_argument(
@@ -217,9 +214,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--alpha", type=float, default=0.05, help="alpha"
-    )
-    parser.add_argument(
-        "--rpc_log_dir", type=str, help="path to save rpc log file"
     )
     parser.add_argument(
         "--num_numba_threads", type=int, default=1, help="number of numba threads"
