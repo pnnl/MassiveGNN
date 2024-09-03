@@ -7,12 +7,15 @@ ALPHA=$5
 HIT_RATE=$6
 DATASET_NAME=$7
 NUM_NODES=$8
-MODEL=$9    # pass 'gat' or 'sage' as argument
-QUEUE=${10}
-LOGS_DIR=${11}
-NUM_TRAINERS="1"
-NUM_SAMPLER_PROCESSES="0"
-PARTITION_METHOD="metis"
+NUM_TRAINERS=$9
+NUM_SAMPLER_PROCESSES=${10}
+MODEL=${11}  
+QUEUE=${12}
+LOGS_DIR=${13}
+DATA_DIR=${14}
+PROJ_PATH=${15}
+PARTITION_DIR=${16}
+PARTITION_METHOD=${17}
 
 if [ "$MODE" == "cpu" ]; then
     BACKEND=$2
@@ -116,10 +119,10 @@ for DATASET in $DATASET_NAME; do
                     # if mode is gpu
                     if [ "$MODE" == "gpu" ]; then
                         CMD="sbatch -N $NODES -q $QUEUE --job-name $JOBNAME -o $OUTFILE -e $ERRFILE --time=$TIME $SCRIPT  $DATASET $PARTITION \
-                        $NODES $SAMPLER_PROCESSES $SUMMARYFILE $IP_CONFIG_FILE $TRAINERS $BACKEND $EVICTION_PERIOD $PREFETCH_FRACTION $ALPHA $HIT_RATE $MODEL"
+                        $NODES $SAMPLER_PROCESSES $SUMMARYFILE $IP_CONFIG_FILE $TRAINERS $BACKEND $EVICTION_PERIOD $PREFETCH_FRACTION $ALPHA $HIT_RATE $MODEL $DATA_DIR $PROJ_PATH $PARTITION_DIR"
                     elif [ "$MODE" == "cpu" ]; then
                         CMD="sbatch -N $NODES -q $QUEUE --job-name $JOBNAME -o $OUTFILE -e $ERRFILE --time=$TIME $SCRIPT $DATASET $PARTITION \
-                        $NODES $SAMPLER_PROCESSES $SUMMARYFILE $IP_CONFIG_FILE $BACKEND $TRAINERS $EVICTION_PERIOD $PREFETCH_FRACTION $ALPHA $HIT_RATE $MODEL"
+                        $NODES $SAMPLER_PROCESSES $SUMMARYFILE $IP_CONFIG_FILE $BACKEND $TRAINERS $EVICTION_PERIOD $PREFETCH_FRACTION $ALPHA $HIT_RATE $MODEL $DATA_DIR $PROJ_PATH $PARTITION_DIR"
                     fi               
                     # Submit the job
                     eval $CMD

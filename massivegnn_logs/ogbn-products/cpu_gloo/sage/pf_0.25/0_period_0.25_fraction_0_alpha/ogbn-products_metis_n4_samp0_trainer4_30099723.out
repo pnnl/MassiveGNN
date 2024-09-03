@@ -1,0 +1,16 @@
+/usr/local/cuda-12.2/compat:/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/math_libs/12.2/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/extras/CUPTI/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/extras/Debugger/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/nvvm/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/lib64:/opt/cray/pe/papi/7.0.1.2/lib64:/opt/cray/libfabric/1.15.2.0/lib64:/opt/cray/libfabric/1.15.2.0/lib64
+/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/math_libs/11.7/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/extras/CUPTI/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/extras/Debugger/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/nvvm/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/lib64:/opt/cray/pe/papi/7.0.1.2/lib64:/opt/cray/libfabric/1.15.2.0/lib64
+Generating ip_config.txt...
+Getting first 10.249.x.x IP address for node: nid004802
+Getting first 10.249.x.x IP address for node: nid006305
+Getting first 10.249.x.x IP address for node: nid006502
+Getting first 10.249.x.x IP address for node: nid006525
+10.249.4.167
+10.249.16.66
+10.249.17.227
+10.249.17.255
+JOBID: 30099723
+Total Cores: 128
+Cores per Trainer: 32
+OMP Threads: 16
+Numba Threads: 16

@@ -1,0 +1,56 @@
+Assigned Nodes: nid004402
+nid005006
+nid006190
+nid006758
+Dataset: ogbn-products
+Partition Method: metis
+Number of Nodes: 4
+Using gloo backend
+Number of Sampler Processes: 0
+Number of Trainers/node: 4
+Total Nodes: 4
+Data Directory: /pscratch/sd/s/sark777/Distributed_DGL/dataset
+Project Path: /global/u1/s/sark777/MassiveGNN
+Partition Directory: /pscratch/sd/s/sark777/Distributed_DGL/partitions/metis/ogbn-products/4_parts/ogbn-products.json
+IP Config File: /global/homes/s/sark777/MassiveGNN/massivegnn_logs/ogbn-products/cpu_gloo/sage/pf_0.25/0_period_0.25_fraction_0_alpha/ip_config/ip_config_ogbn-products_metis_n4_samp0_trainer4_30100295.txt
+Eviction Period: 0
+Prefetch Fraction: 0.25
+Alpha: 0
+Hit Rate: true
+Start Time: 11:58:53.868894219
+
+
+Rank 2 | TotalEpochTime 167.4947s| HitRate 42.0000 | MissRate 58.0000| ForwardTime 15.0230s| BackwardTime 125.6403s| UpdateTime 0.4428s| FirstMinibatchSampleTime 0.1114s| SampleTime 65.3203s| WaitForThreadTime 13.8739s| EvalTime 68.2408s| EpochTime80Percent 125.8905s| PrefetchComputeTime 9.4752s| EvictionTime 0.0000s| RPCTime 39.1474s
+
+Rank 1 | TotalEpochTime 167.4869s| HitRate 42.0000 | MissRate 58.0000| ForwardTime 14.7429s| BackwardTime 126.4459s| UpdateTime 0.4219s| FirstMinibatchSampleTime 0.0823s| SampleTime 58.8620s| WaitForThreadTime 12.2407s| EvalTime 68.2485s| EpochTime80Percent 125.8862s| PrefetchComputeTime 9.3682s| EvictionTime 0.0000s| RPCTime 41.0302s
+
+Rank 3 | TotalEpochTime 167.5390s| HitRate 42.0000 | MissRate 58.0000| ForwardTime 14.6556s| BackwardTime 126.7819s| UpdateTime 0.4283s| FirstMinibatchSampleTime 0.0777s| SampleTime 59.4086s| WaitForThreadTime 12.3416s| EvalTime 68.1931s| EpochTime80Percent 125.9299s| PrefetchComputeTime 9.2315s| EvictionTime 0.0000s| RPCTime 40.2690s
+
+Rank 0 | TotalEpochTime 167.6103s| HitRate 42.0000 | MissRate 58.0000| ForwardTime 15.0453s| BackwardTime 126.7704s| UpdateTime 0.4444s| FirstMinibatchSampleTime 0.0703s| SampleTime 56.4614s| WaitForThreadTime 11.2265s| EvalTime 68.1167s| EpochTime80Percent 125.9898s| PrefetchComputeTime 9.8148s| EvictionTime 0.0000s| RPCTime 40.7116s
+
+Rank 14 | TotalEpochTime 167.5635s| HitRate 41.0000 | MissRate 59.0000| ForwardTime 16.3805s| BackwardTime 116.1435s| UpdateTime 0.5337s| FirstMinibatchSampleTime 0.1442s| SampleTime 73.4610s| WaitForThreadTime 26.1780s| EvalTime 68.1697s| EpochTime80Percent 125.9593s| PrefetchComputeTime 9.3075s| EvictionTime 0.0000s| RPCTime 41.1983s
+
+Rank 4 | TotalEpochTime 167.5842s| HitRate 45.0000 | MissRate 55.0000| ForwardTime 16.4205s| BackwardTime 113.4158s| UpdateTime 0.4536s| FirstMinibatchSampleTime 0.1103s| SampleTime 76.8736s| WaitForThreadTime 29.3777s| EvalTime 68.1456s| EpochTime80Percent 125.9720s| PrefetchComputeTime 9.6545s| EvictionTime 0.0000s| RPCTime 42.2551s
+
+Rank 13 | TotalEpochTime 167.5489s| HitRate 41.0000 | MissRate 59.0000| ForwardTime 16.5216s| BackwardTime 110.5839s| UpdateTime 0.4618s| FirstMinibatchSampleTime 0.0760s| SampleTime 77.9131s| WaitForThreadTime 31.6822s| EvalTime 68.1843s| EpochTime80Percent 125.9350s| PrefetchComputeTime 9.3796s| EvictionTime 0.0000s| RPCTime 42.4620s
+
+Rank 5 | TotalEpochTime 167.5418s| HitRate 45.0000 | MissRate 55.0000| ForwardTime 16.6825s| BackwardTime 111.6817s| UpdateTime 0.4673s| FirstMinibatchSampleTime 0.1011s| SampleTime 73.9543s| WaitForThreadTime 30.7746s| EvalTime 68.1890s| EpochTime80Percent 125.9290s| PrefetchComputeTime 9.6241s| EvictionTime 0.0000s| RPCTime 42.9424s
+
+Rank 10 | TotalEpochTime 167.5047s| HitRate 42.0000 | MissRate 58.0000| ForwardTime 15.5324s| BackwardTime 125.9829s| UpdateTime 0.4361s| FirstMinibatchSampleTime 0.0984s| SampleTime 60.8704s| WaitForThreadTime 13.0106s| EvalTime 68.2316s| EpochTime80Percent 125.8985s| PrefetchComputeTime 10.3479s| EvictionTime 0.0000s| RPCTime 40.0691s
+
+Rank 7 | TotalEpochTime 167.5294s| HitRate 45.0000 | MissRate 55.0000| ForwardTime 16.7198s| BackwardTime 112.8952s| UpdateTime 0.4458s| FirstMinibatchSampleTime 0.0912s| SampleTime 73.9072s| WaitForThreadTime 29.2119s| EvalTime 68.2036s| EpochTime80Percent 125.9206s| PrefetchComputeTime 9.8095s| EvictionTime 0.0000s| RPCTime 41.1886s
+
+Rank 12 | TotalEpochTime 167.5002s| HitRate 41.0000 | MissRate 59.0000| ForwardTime 16.8855s| BackwardTime 111.7174s| UpdateTime 0.4242s| FirstMinibatchSampleTime 0.1365s| SampleTime 71.9379s| WaitForThreadTime 30.2081s| EvalTime 68.2351s| EpochTime80Percent 125.8956s| PrefetchComputeTime 9.7140s| EvictionTime 0.0000s| RPCTime 42.6479s
+
+Rank 8 | TotalEpochTime 167.5853s| HitRate 42.0000 | MissRate 58.0000| ForwardTime 16.1503s| BackwardTime 124.1234s| UpdateTime 0.4695s| FirstMinibatchSampleTime 0.0960s| SampleTime 62.3851s| WaitForThreadTime 13.8222s| EvalTime 68.1470s| EpochTime80Percent 125.9641s| PrefetchComputeTime 10.9209s| EvictionTime 0.0000s| RPCTime 39.3530s
+
+Rank 6 | TotalEpochTime 167.5258s| HitRate 45.0000 | MissRate 55.0000| ForwardTime 17.2880s| BackwardTime 108.5125s| UpdateTime 0.4703s| FirstMinibatchSampleTime 0.1192s| SampleTime 79.3418s| WaitForThreadTime 33.6248s| EvalTime 68.2083s| EpochTime80Percent 125.9203s| PrefetchComputeTime 9.6952s| EvictionTime 0.0000s| RPCTime 43.9881s
+
+Rank 11 | TotalEpochTime 167.5993s| HitRate 42.0000 | MissRate 58.0000| ForwardTime 16.5404s| BackwardTime 123.7937s| UpdateTime 0.4439s| FirstMinibatchSampleTime 0.1024s| SampleTime 61.8372s| WaitForThreadTime 14.6114s| EvalTime 68.1350s| EpochTime80Percent 125.9813s| PrefetchComputeTime 10.9257s| EvictionTime 0.0000s| RPCTime 40.1831s
+alpha: 0.0, period: 0, threshold: 1.0
+
+Summary of node classification(sage): GraphName, prefetch_fraction: 0.25, ogbn-products | TrainEpochTime(mean) 1.6754 | TotalEpochTime 2680.6612| TestAccuracy 0.6938 | ForwardTime 0.1602| BackwardTime 1.1922 | UpdateTime 0.0045| SampleTime+Data_Copy 0.6802 | EvalTime 3.4096
+
+Rank 9 | TotalEpochTime 167.5153s| HitRate 42.0000 | MissRate 58.0000| ForwardTime 15.7245s| BackwardTime 125.2296s| UpdateTime 0.4746s| FirstMinibatchSampleTime 0.1105s| SampleTime 65.9369s| WaitForThreadTime 14.0895s| EvalTime 68.2186s| EpochTime80Percent 125.9087s| PrefetchComputeTime 9.8426s| EvictionTime 0.0000s| RPCTime 37.5230s
+
+Rank 15 | TotalEpochTime 167.5319s| HitRate 41.0000 | MissRate 59.0000| ForwardTime 15.9940s| BackwardTime 117.8048s| UpdateTime 0.4176s| FirstMinibatchSampleTime 0.0787s| SampleTime 69.9199s| WaitForThreadTime 24.1904s| EvalTime 68.2021s| EpochTime80Percent 125.9208s| PrefetchComputeTime 9.3773s| EvictionTime 0.0000s| RPCTime 38.1887s

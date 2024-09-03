@@ -1,0 +1,24 @@
+Assigned Nodes: nid004802
+nid006305
+nid006502
+nid006525
+Dataset: ogbn-products
+Partition Method: metis
+Number of Nodes: 4
+Using gloo backend
+Number of Sampler Processes: 0
+Number of Trainers: 4
+Total GPUs: 
+Total Nodes: 4
+GPUs per Node: 
+Data Directory: 
+Project Path: 
+Partition Directory: 
+IP Config File: /global/homes/s/sark777/MassiveGNN/massivegnn_logs/ogbn-products/cpu_gloo/sage/pf_0.25/0_period_0.25_fraction_0_alpha/ip_config/ip_config_ogbn-products_metis_n4_samp0_trainer4_30099723.txt
+Profile Directory: 
+Eviction Period: 0
+Prefetch Fraction: 0.25
+Alpha: 0
+Hit Rate: true
+Start Time: 11:46:27.462704307
+

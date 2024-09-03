@@ -24,13 +24,11 @@ PREFETCH_FRACTION=${10}
 ALPHA=${11}
 HIT_RATE=${12}
 MODEL=${13}
+DATA_DIR=${14}
+PROJ_PATH=${15}
+PARTITION_DIR=${16}
 TOTAL_GPUS=$(($GPUS_PER_NODE * $NUM_NODES)) # total number of GPUs
 JOBID=$SLURM_JOB_ID
-
-DATA_DIR="/pscratch/sd/s/sark777/Distributed_DGL/dataset"
-PROJ_PATH="/global/u1/s/sark777/MassiveGNN"
-PARTITION_DIR="/pscratch/sd/s/sark777/Distributed_DGL/partitions/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts/${DATASET_NAME}.json"
-
 
 NODELIST=$(scontrol show hostnames $SLURM_JOB_NODELIST) # get list of nodes
 
@@ -55,7 +53,6 @@ echo "Eviction Period: $EVICTION_PERIOD" >> $SUMMARYFILE
 echo "Prefetch Fraction: $PREFETCH_FRACTION" >> $SUMMARYFILE
 echo "Alpha: $ALPHA" >> $SUMMARYFILE
 echo "Hit Rate: $HIT_RATE" >> $SUMMARYFILE
-echo "Writing logs to: $RPC_LOG_DIR" >> $SUMMARYFILE
 echo "Start Time: $(date +'%T.%N')" >> $SUMMARYFILE
 echo "" >> $SUMMARYFILE
 

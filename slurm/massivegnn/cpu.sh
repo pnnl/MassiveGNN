@@ -1,15 +1,14 @@
 #!/bin/bash
 #SBATCH -A m1302
-#SBATCH -t 00:30:00
 #SBATCH --constraint=cpu
-#SBATCH -q debug
 #SBATCH --mail-type=begin,end,fail
 #SBATCH --mail-user=asarkar1@iastate.edu
 
-echo $LD_LIBRARY_PATH
-module load cudatoolkit/11.7
+
 echo $LD_LIBRARY_PATH
 source activate dgl-dev-gpu-117
+module load cudatoolkit/11.7
+echo $LD_LIBRARY_PATH
 PYTHON_PATH=$(which python)
 
 DATASET_NAME=$1
@@ -20,17 +19,15 @@ SUMMARYFILE=$5
 IP_CONFIG_FILE=$6
 BACKEND=$7
 TRAINERS=$8
-JOBID=$SLURM_JOB_ID
 EVICTION_PERIOD=$9
 PREFETCH_FRACTION=${10}
 ALPHA=${11}
 HIT_RATE=${12}
 MODEL=${13}
-
-DATA_DIR="/pscratch/sd/s/sark777/Distributed_DGL/dataset"
-PROJ_PATH="/global/u1/s/sark777/MassiveGNN"
-PARTITION_DIR="/pscratch/sd/s/sark777/Distributed_DGL/partitions/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts/${DATASET_NAME}.json"
-RPC_LOG_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/blocktimes/baseline/logs_${SLURM_JOB_ID}"
+DATA_DIR=${14}
+PROJ_PATH=${15}
+PARTITION_DIR=${16}
+JOBID=$SLURM_JOB_ID
 
 NODELIST=$(scontrol show hostnames $SLURM_JOB_NODELIST) # get list of nodes
 
@@ -46,16 +43,17 @@ echo "Partition Method: $PARTITION_METHOD" >> $SUMMARYFILE
 echo "Number of Nodes: $NUM_NODES" >> $SUMMARYFILE
 echo "Using $BACKEND backend" >> $SUMMARYFILE
 echo "Number of Sampler Processes: $SAMPLER_PROCESSES" >> $SUMMARYFILE
-echo "Number of Trainers: $TRAINERS" >> $SUMMARYFILE
+echo "Number of Trainers/node: $TRAINERS" >> $SUMMARYFILE
 echo "Total Nodes: $NUM_NODES" >> $SUMMARYFILE
-echo "GPUs per Node: $GPUS_PER_NODE" >> $SUMMARYFILE
 echo "Data Directory: $DATA_DIR" >> $SUMMARYFILE
 echo "Project Path: $PROJ_PATH" >> $SUMMARYFILE
 echo "Partition Directory: $PARTITION_DIR" >> $SUMMARYFILE
 echo "IP Config File: $IP_CONFIG_FILE" >> $SUMMARYFILE
-echo "" >> $SUMMARYFILE
-# log current time in hh:mm:ss format
-echo "Start Time: $(date +"%T")" >> $SUMMARYFILE
+echo "Eviction Period: $EVICTION_PERIOD" >> $SUMMARYFILE
+echo "Prefetch Fraction: $PREFETCH_FRACTION" >> $SUMMARYFILE
+echo "Alpha: $ALPHA" >> $SUMMARYFILE
+echo "Hit Rate: $HIT_RATE" >> $SUMMARYFILE
+echo "Start Time: $(date +'%T.%N')" >> $SUMMARYFILE
 echo "" >> $SUMMARYFILE
 
 echo "Generating ip_config.txt..."
@@ -77,6 +75,7 @@ done
 
 # Print the contents of the ipconfig file
 cat $IP_CONFIG_FILE
+
 # assert that the number of lines in ip_config.txt is equal to NUM_NODES
 NUM_IPS=$(wc -l < $IP_CONFIG_FILE)
 if [ "$NUM_IPS" -ne "$NUM_NODES" ]; then
@@ -84,10 +83,31 @@ if [ "$NUM_IPS" -ne "$NUM_NODES" ]; then
     exit 1
 fi
 
-# Delete the line with 127.0.1.1
-sed -i '/^127\.0\.1\.1/d' $IP_CONFIG_FILE
 echo "JOBID: $JOBID"
-echo "MODEL: $MODEL"
+
+# if alpha and period is 0, set eviction to False
+if [ "$EVICTION_PERIOD" -eq 0 ] && [ "$ALPHA" -eq 0 ]; then
+    EVICTION=False
+else
+    EVICTION=True
+fi
+
+# get total number of cores on the node (multiply by number of sockets)
+CORES_PER_SOCKET=$(lscpu | grep "Core(s) per socket" | awk '{print $4}')
+SOCKETS=$(lscpu | grep "Socket(s)" | awk '{print $2}')
+TOTAL_CORES=$(($CORES_PER_SOCKET * $SOCKETS))
+
+CORES_PER_TRAINER=$(($TOTAL_CORES / $TRAINERS))
+OMP_THREADS=$(($CORES_PER_TRAINER / 2))
+# numba threads = OMP threads - 1
+NUMBA_THREADS=$(($OMP_THREADS)) # 1 for main thread and rest for numba threads
+
+echo "Total Cores: $TOTAL_CORES"
+echo "Cores per Trainer: $CORES_PER_TRAINER"
+echo "OMP Threads: $OMP_THREADS"
+echo "Numba Threads: $NUMBA_THREADS"
+
+# echo "Setting num_omp_threads to 64"
 if [ "$MODEL" == "sage" ]; then
     $PYTHON_PATH $PROJ_PATH/launch.py \
     --workspace $PROJ_PATH \
@@ -96,13 +116,20 @@ if [ "$MODEL" == "sage" ]; then
     --num_servers 1 \
     --part_config $PARTITION_DIR \
     --ip_config  $IP_CONFIG_FILE \
-    --num_omp_threads 16 \
+    --num_omp_threads $OMP_THREADS \
     "$PYTHON_PATH massivegnn/main.py --graph_name $DATASET_NAME \
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
-    --summary_filepath $SUMMARYFILE"
+    --summary_filepath $SUMMARYFILE \
+    --prefetch_fraction $PREFETCH_FRACTION \
+    --eviction_period $EVICTION_PERIOD \
+    --alpha $ALPHA \
+    --eviction $EVICTION \
+    --num_trainer_threads $OMP_THREADS \
+    --num_numba_threads $NUMBA_THREADS \
+    --hit_rate_flag $HIT_RATE \
+    --model $MODEL"
 fi
-
 if [ "$MODEL" == "gat" ]; then
     $PYTHON_PATH $PROJ_PATH/launch.py \
     --workspace $PROJ_PATH \
@@ -111,10 +138,18 @@ if [ "$MODEL" == "gat" ]; then
     --num_servers 1 \
     --part_config $PARTITION_DIR \
     --ip_config  $IP_CONFIG_FILE \
-    --num_omp_threads 16 \
+    --num_omp_threads $OMP_THREADS \
     "$PYTHON_PATH massivegnn/main.py --graph_name $DATASET_NAME \
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
     --summary_filepath $SUMMARYFILE \
+    --prefetch_fraction $PREFETCH_FRACTION \
+    --eviction_period $EVICTION_PERIOD \
+    --alpha $ALPHA \
+    --eviction $EVICTION \
+    --num_trainer_threads $OMP_THREADS \
+    --num_numba_threads $NUMBA_THREADS \
+    --hit_rate_flag $HIT_RATE \
+    --model $MODEL \
     --num_heads 2"
 fi

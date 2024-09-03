@@ -83,35 +83,41 @@ To run MassiveGNN on a distributed system, follow these steps:
 
 5. Run the script `set_params.sh`:  
    This script will set the necessary parameters and submit the job to SLURM. Depending on your arguments, the job will either be submitted to run on CPU nodes via `cpu.sh` or on GPU nodes via `gpu.sh`. After updating the SLURM directives, you can execute the `set_params.sh` script to start the job submission process:
-    ```bash
-    bash set_params.sh -h
-    
-    Usage: set_params.sh [MODE] [HIT_RATE] [MODEL] [FP] [DELTA] [ALPHAS] [DATASET_NAME] [NUM_NODES] [QUEUE] [LOGS_DIR]
+    ```
+    Usage: set_params.sh [MODE] [HIT_RATE] [MODEL] [FP] [DELTA] [ALPHAS] [DATASET_NAME] [NUM_NODES] [NUM_TRAINERS] [NUM_SAMPLER_PROCESSES] [QUEUE] [LOGS_DIR] [DATA_DIR] [PROJ_PATH] [PARTITION_DIR] [PARTITION_METHOD]
 
     Arguments:
-      MODE           Execution mode, either 'cpu' or 'gpu'.
-      HIT_RATE       Hit rate flag, 'true' or 'false'
-      MODEL          Model name to be used. Currently accepts 'sage' or 'gat'.
-      FP             % halo nodes to prefetch while initializing buffer (e.g., '0.5').
-      DELTA          Eviction interval.
-      ALPHAS         Alpha value (e.g., '0.05'). Alpha is calculated as 1-delta.
-      DATASET_NAME   Name of the dataset (e.g., 'ogbn-products').
-      NUM_NODES      Number of nodes to be used (e.g., '2 4 8').
-      QUEUE          SLURM queue name (e.g., 'regular' or 'debug').
-      LOGS_DIR       Path to slurm logs.
-
-    Example:
-      set_params.sh gpu true sage 0.25 32 0.005 ogbn-products '2 4 8' regular '~/MassiveGNN'
+      MODE                 Execution mode, either 'cpu' or 'gpu'.
+      HIT_RATE             Hit rate flag, 'true' or 'false'.
+      MODEL                Model name to be used. Currently accepts 'sage' or 'gat'.
+      FP                   % halo nodes to prefetch while initializing buffer (e.g., '0.5').
+      DELTA                Eviction interval.
+      ALPHAS               Alpha value (e.g., '0.05'). Alpha is calculated as 1-delta.
+      DATASET_NAME         Name of the dataset (e.g., 'ogbn-products').
+      NUM_NODES            Number of nodes to be used (e.g., '2 4 8').
+      NUM_TRAINERS         Number of trainers to be used.
+      NUM_SAMPLER_PROCESSES Number of sampler processes to be used.
+      QUEUE                SLURM queue name (e.g., 'regular' or 'debug').
+      LOGS_DIR             Path to SLURM logs.
+      DATA_DIR             Directory where the input graph data is stored.
+      PROJ_PATH            Path to the project directory.
+      PARTITION_DIR        Directory where the partitioned graphs are stored.
+      PARTITION_METHOD     Method to partition the dataset (e.g., 'metis').
     ```
-
+    Example:
+    ```bash
+    bash set_params.sh gpu true sage 0.25 32 0.005 ogbn-products 2 4 0 regular '~/MassiveGNN' '~/MassiveGNN/dataset' '~/MassiveGNN' '~/MassiveGNN/partitions' 'metis'
+    ```
+    **Note:** To run the prefetch without eviction version set DELTA and ALPHA to 0.
+    
 ## How to Cite
 If you use MassiveGNN in your research, please cite our paper:
 ```
-@inproceedings{sarkar2024,
-  title={Efficient training of GNN for massively connected distributed graphs using prefetching},
-  author={Your Name and Collaborators},
-  booktitle={Proceedings of the Conference},
+@inproceedings{massivegnn,
+  title={MassiveGNN: Efficient Training via Prefetching \\ for Massively Connected Distributed Graphs},
+  author={Aishwarya Sarkar, Sayan Ghosh, Nathan R. Tallent, Ali Jannesari},
+  booktitle={2024 IEEE International Conference on Cluster Computing (CLUSTER)},
   year={2024},
-  organization={IEEE/ACM}
+  organization={IEEE}
 }
 ```
