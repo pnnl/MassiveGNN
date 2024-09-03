@@ -106,7 +106,7 @@ To run MassiveGNN on a distributed system, follow these steps:
     ```
     Example:
     ```bash
-    bash set_params.sh gpu true sage 0.25 32 0.005 ogbn-products 2 4 0 regular '~/MassiveGNN' '~/MassiveGNN/dataset' '~/MassiveGNN' '~/MassiveGNN/partitions' 'metis'
+    bash set_params.sh gpu true sage 0.25 32 0.005 ogbn-products 2 4 0 regular ~/MassiveGNN ~/MassiveGNN/dataset ~/MassiveGNN ~/MassiveGNN/partitions metis
     ```
     **Note:** To run the prefetch without eviction version set DELTA and ALPHA to 0.
     
@@ -114,7 +114,7 @@ To run MassiveGNN on a distributed system, follow these steps:
 If you use MassiveGNN in your research, please cite our paper:
 ```
 @inproceedings{massivegnn,
-  title={MassiveGNN: Efficient Training via Prefetching \\ for Massively Connected Distributed Graphs},
+  title={MassiveGNN: Efficient Training via Prefetching for Massively Connected Distributed Graphs},
   author={Aishwarya Sarkar, Sayan Ghosh, Nathan R. Tallent, Ali Jannesari},
   booktitle={2024 IEEE International Conference on Cluster Computing (CLUSTER)},
   year={2024},
