@@ -1,4 +1,10 @@
 # MassiveGNN
+<p align="center">
+  <img src="massivegnn-arch.png" alt="MassiveGNN architecture" width="600">
+  <br>
+  <b>Figure</b>: MassiveGNN Overall Architecture
+</p>
+
 ## Description
 MassiveGNN is a framework designed to accelerate the training of Graph Neural Networks (GNNs) on large-scale, massively connected distributed graphs. Built on top of DistDGL, it utilizes a dynamic prefetching and eviction strategy to optimize remote data fetching and processing and significantly reduces the training time for GNN models on distributed memory systems, enabling efficient and scalable training of large graph datasets.
 
