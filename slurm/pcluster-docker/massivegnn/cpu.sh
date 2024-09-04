@@ -1,15 +1,11 @@
 #!/bin/bash
-#SBATCH -A m1302
-#SBATCH --constraint=cpu
-#SBATCH --mail-type=begin,end,fail
-#SBATCH --mail-user=asarkar1@iastate.edu
+#SBATCH --job-name=massivegnn
+#SBATCH --partition=g4q  # Use a partition with GPU instances if your code requires GPU
+#SBATCH --gres=gpu:1
+#SBATCH --time=00:15:00
 
-
-echo $LD_LIBRARY_PATH
-source activate dgl-dev-gpu-117
-module load cudatoolkit/11.7
-echo $LD_LIBRARY_PATH
-PYTHON_PATH=$(which python)
+# Ensure Docker is running on all nodes
+srun --nodes=$SLURM_JOB_NUM_NODES sudo systemctl start docker
 
 DATASET_NAME=$1
 PARTITION_METHOD=$2
@@ -27,14 +23,17 @@ MODEL=${13}
 DATA_DIR=${14}
 PROJ_PATH=${15}
 PARTITION_DIR=${16}
+AWS_ACCESS_KEY_ID=${17}
+AWS_SECRET_ACCESS_KEY=${18}
+AWS_SESSION_TOKEN=${19}
 JOBID=$SLURM_JOB_ID
 
 NODELIST=$(scontrol show hostnames $SLURM_JOB_NODELIST) # get list of nodes
+SUMMARYFILE="${SUMMARYFILE}_${SLURM_JOB_ID}.txt" # append job id to SUMMARYFILE and .txt
+IP_CONFIG_FILE="${IP_CONFIG_FILE}_${SLURM_JOB_ID}.txt" # append job id to IP_CONFIG_FILE
 
-# append job id to SUMMARYFILE and .txt
-SUMMARYFILE="${SUMMARYFILE}_${SLURM_JOB_ID}.txt"
-# append job id to IP_CONFIG_FILE
-IP_CONFIG_FILE="${IP_CONFIG_FILE}_${SLURM_JOB_ID}.txt"
+S3_BUCKET="s3://massivegnn"
+S3_PARTITION_PATH="$S3_BUCKET/dgl-partitions"
 
 # write all parameters to summary file
 echo "Assigned Nodes: $NODELIST" >> $SUMMARYFILE
@@ -58,32 +57,20 @@ echo "" >> $SUMMARYFILE
 
 echo "Generating ip_config.txt..."
 : > $IP_CONFIG_FILE  # Empty the file if it exists
-
 for node in $NODELIST; do
-    echo "Getting first 10.249.x.x IP address for node: $node"
-
-    # Use srun to execute 'ip addr show' on each node and extract the first 10.249.x.x IP
-    first_ip=$(srun --nodes=1 --nodelist=$node ip addr show | grep 'inet 10.249' | awk '{print $2}' | cut -d'/' -f1 | head -n 1)
-
-    # Check if an IP address was found and append it to the ipconfig file
+    first_ip=$(srun --nodes=1 --nodelist=$node hostname -I | awk '{print $1}')
     if [ ! -z "$first_ip" ]; then
         echo $first_ip >> $IP_CONFIG_FILE
     else
-        echo "No 10.249.x.x IP found for $node" >&2
+        echo "No IP found for $node" >&2
     fi
 done
 
-# Print the contents of the ipconfig file
-cat $IP_CONFIG_FILE
-
-# assert that the number of lines in ip_config.txt is equal to NUM_NODES
 NUM_IPS=$(wc -l < $IP_CONFIG_FILE)
 if [ "$NUM_IPS" -ne "$NUM_NODES" ]; then
     echo "Number of IPs ($NUM_IPS) does not match number of nodes ($NUM_NODES)"
     exit 1
 fi
-
-echo "JOBID: $JOBID"
 
 # if alpha and period is 0, set eviction to False
 if [ "$EVICTION_PERIOD" -eq 0 ] && [ "$ALPHA" -eq 0 ]; then
@@ -107,9 +94,49 @@ echo "Cores per Trainer: $CORES_PER_TRAINER"
 echo "OMP Threads: $OMP_THREADS"
 echo "Numba Threads: $NUMBA_THREADS"
 
+export $AWS_ACCESS_KEY_ID
+export $AWS_SECRET_ACCESS_KEY
+export $AWS_SESSION_TOKEN
+
+# Pull data from S3 outside Docker
+aws s3 cp --recursive $S3_PARTITION_PATH/${DATASET_NAME}/${NUM_NODES}_parts $PROJ_PATH/partitions/${DATASET_NAME}/${NUM_NODES}_parts/
+
+echo "Stopping and removing existing containers..."
+srun --nodes=$SLURM_JOB_NUM_NODES bash -c "
+    existing_container=\$(docker ps -aq -f name=dgl_container)
+    if [ ! -z \"\$existing_container\" ]; then
+        docker stop \$existing_container
+        docker rm \$existing_container
+    fi
+"
+
+# Start the Docker container as a daemon on all nodes
+echo "Starting Docker container as a daemon on all nodes..."
+srun --nodes=$SLURM_JOB_NUM_NODES bash -c "
+    docker run --gpus all \
+   --network=host \
+   --ipc=host \
+   --privileged \
+   -v /home/ec2-user:/home/ec2-user \
+   -v /home/ec2-user/.ssh:/root/.ssh \
+   -w /home/ec2-user/MassiveGNN \
+   --name dgl_container \
+   -d \
+   nvcr.io/nvidia/dgl:24.07-py3 \
+   tail -f /dev/null
+"
+
+# Ensure the container is running on all nodes
+srun --nodes=$SLURM_JOB_NUM_NODES bash -c "
+    if ! docker ps | grep -q dgl_container; then
+        echo 'Container dgl_container is not running on node \$(hostname)' >&2
+        exit 1
+    fi
+"
+
 # echo "Setting num_omp_threads to 64"
 if [ "$MODEL" == "sage" ]; then
-    $PYTHON_PATH $PROJ_PATH/launch.py \
+    python3 $PROJ_PATH/launch.py \
     --workspace $PROJ_PATH \
     --num_trainers $TRAINERS \
     --num_samplers $SAMPLER_PROCESSES \
@@ -117,7 +144,8 @@ if [ "$MODEL" == "sage" ]; then
     --part_config $PARTITION_DIR \
     --ip_config  $IP_CONFIG_FILE \
     --num_omp_threads $OMP_THREADS \
-    "$PYTHON_PATH massivegnn/main.py --graph_name $DATASET_NAME \
+    --docker_container dgl_container \
+    "python3 massivegnn/main.py --graph_name $DATASET_NAME \
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
     --summary_filepath $SUMMARYFILE \
@@ -130,8 +158,9 @@ if [ "$MODEL" == "sage" ]; then
     --hit_rate_flag $HIT_RATE \
     --model $MODEL"
 fi
+
 if [ "$MODEL" == "gat" ]; then
-    $PYTHON_PATH $PROJ_PATH/launch.py \
+    python3 $PROJ_PATH/launch.py \
     --workspace $PROJ_PATH \
     --num_trainers $TRAINERS \
     --num_samplers $SAMPLER_PROCESSES \
@@ -139,7 +168,8 @@ if [ "$MODEL" == "gat" ]; then
     --part_config $PARTITION_DIR \
     --ip_config  $IP_CONFIG_FILE \
     --num_omp_threads $OMP_THREADS \
-    "$PYTHON_PATH massivegnn/main.py --graph_name $DATASET_NAME \
+    --docker_container dgl_container \
+    "python3 massivegnn/main.py --graph_name $DATASET_NAME \
     --backend $BACKEND \
     --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
     --summary_filepath $SUMMARYFILE \
@@ -153,3 +183,9 @@ if [ "$MODEL" == "gat" ]; then
     --model $MODEL \
     --num_heads 2"
 fi
+
+# Stop the Docker container after the job is done
+echo "Stopping Docker container..."
+srun --nodes=$SLURM_JOB_NUM_NODES bash -c "docker stop dgl_container"
+
+echo "Job completed successfully."
