@@ -41,10 +41,10 @@ fi
 
 for DATASET in $DATASET_NAME; do
     if [ "$MODEL" == "gat" ]; then 
-         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/release/distdgl/${LOGNAME}/gat"
+         LOGS_DIR="/global/homes/s/sark777/MassiveGNN/baseline_logs/${DATASET}/${LOGNAME}/gat"
     fi
     if [ "$MODEL" == "sage" ]; then
-         LOGS_DIR="/global/cfs/cdirs/m4626/Distributed_DGL/dgl_ex/experiments/logs/${DATASET}/release/distdgl/${LOGNAME}"
+         LOGS_DIR="/global/homes/s/sark777/MassiveGNN/baseline_logs/${DATASET}/${LOGNAME}/sage"
     fi
     IP_CONFIG_DIR="${LOGS_DIR}/ip_config"
 

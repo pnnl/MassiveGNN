@@ -335,44 +335,10 @@ def wrap_udf_in_torch_dist_launcher(
         out_part = output_name.split('_')[1] #actual filename without %p
         out_part = f'{out_part}_{node_rank}' # add node rank to filename
         output_name = output_name.replace(output_name.split('_')[1], out_part) # replace the filename with the new one
-        # print("new output name: ", output_name)
-        # replace the output name with the new one
         nsys_part[nsys_part.index('-o') + 1] = output_path + '/' + output_name
-        # print(nsys_part)
-        # join the nsys part back together
         nsys_part = ' '.join(nsys_part)
-        # print(nsys_part)
-
-
-        # keep the first to the string 
-        # print(nsys_part)
-        # print(python_path)
-        # print(script)
-
-        # new_udf_command = f'srun -n {num_trainers} -c 32 --cpu_bind=cores -G {num_trainers} --gpu-bind=single:1 {nsys_part} {python_path}{python_bin} {script}'
         new_udf_command = f'srun -n {num_trainers} {nsys_part} {python_path}{python_bin} {script}'
         python_path + " " + torch_dist_cmd + " " + nsys_part + " " + script
-    # transforms the udf_command from:
-    #     python path/to/dist_trainer.py arg0 arg1
-    # to:
-    #     python -m torch.distributed.launch [DIST TORCH ARGS] path/to/dist_trainer.py arg0 arg1
-    # Note: if there are multiple python commands in `udf_command`, this may do the Wrong Thing, eg launch each
-    #       python command within the torch distributed launcher.
-    # else:
-    #     # Extract the directory from the udf_command
-    #     base_dir = os.path.dirname(udf_command.split(' ')[0])
-
-    #     # Construct the full paths for python and py-spy
-    #     full_python_path = os.path.join(base_dir, python_bin)
-    #     full_py_spy_path = os.path.join(base_dir, "py-spy")
-
-    #     py_spy_cmd = f"{full_py_spy_path} record -o {node_rank}.svg --subprocesses --native -- {full_python_path} {torch_dist_cmd}"
-
-    #     # Extract the actual user command after the python binary in udf_command
-    #     user_command_part = " ".join(udf_command.split(' ')[1:])
-
-    #     # Combine everything
-    #     new_udf_command = f"{py_spy_cmd} {user_command_part}"
     else:
         new_udf_command = udf_command.replace(
             python_bin, f"{python_bin} {torch_dist_cmd}"
@@ -622,7 +588,11 @@ def submit_jobs(args, udf_command, dry_run=False):
             if len(args.extra_envs) > 0
             else cmd
         )
-        cmd = "cd " + str(args.workspace) + "; " + cmd
+        # If using Docker, wrap the command with docker exec
+        if args.docker_container:
+            cmd = f"docker exec {args.docker_container} /bin/bash -c \"cd {args.workspace}; {cmd}\""
+        else:
+            cmd = "cd " + str(args.workspace) + "; " + cmd
         servers_cmd.append(cmd)
         if not dry_run:
             thread_list.append(
@@ -671,7 +641,11 @@ def submit_jobs(args, udf_command, dry_run=False):
             if len(args.extra_envs) > 0
             else cmd
         )
-        cmd = "cd " + str(args.workspace) + "; " + cmd
+        # If using Docker, wrap the command with docker exec
+        if args.docker_container:
+            cmd = f"docker exec {args.docker_container} /bin/bash -c \"cd {args.workspace}; {cmd}\""
+        else:
+            cmd = "cd " + str(args.workspace) + "; " + cmd
         clients_cmd.append(cmd)
         if not dry_run:
             thread_list.append(
@@ -679,11 +653,12 @@ def submit_jobs(args, udf_command, dry_run=False):
                     cmd, state_q, ip, args.ssh_port, username=args.ssh_username
                 )
             )
+            print("Client commands: ", clients_cmd)
+            print("Server commands: ", servers_cmd)
+
 
     # return commands of clients/servers directly if in dry run mode
     if dry_run:
-        print("Client commands: ", clients_cmd)
-        print("Server commands: ", servers_cmd)
         return clients_cmd, servers_cmd
 
     # Start a cleanup process dedicated for cleaning up remote training jobs.
@@ -765,6 +740,12 @@ def main():
         type=str,
         help="The file (in workspace) of IP configuration for server processes",
     )
+    parser.add_argument(
+    "--docker_container",
+    type=str,
+    default=None,
+    help="Optional: The name of the Docker container if using Docker"
+)
     parser.add_argument(
         "--num_server_threads",
         type=int,
