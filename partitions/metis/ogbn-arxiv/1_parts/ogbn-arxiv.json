@@ -1,0 +1,35 @@
+{
+    "graph_name": "ogbn-arxiv",
+    "num_nodes": 169343,
+    "num_edges": 2315598,
+    "part_method": "metis",
+    "num_parts": 1,
+    "halo_hops": 1,
+    "node_map": {
+        "_N": [
+            [
+                0,
+                169343
+            ]
+        ]
+    },
+    "edge_map": {
+        "_N:_E:_N": [
+            [
+                0,
+                2315598
+            ]
+        ]
+    },
+    "ntypes": {
+        "_N": 0
+    },
+    "etypes": {
+        "_N:_E:_N": 0
+    },
+    "part-0": {
+        "node_feats": "part0/node_feat.dgl",
+        "edge_feats": "part0/edge_feat.dgl",
+        "part_graph": "part0/graph.dgl"
+    }
+}
