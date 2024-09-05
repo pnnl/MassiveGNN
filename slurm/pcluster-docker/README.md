@@ -51,5 +51,5 @@ Arguments:
 Example:
   set_params.sh gpu true sage 0.25 32 0.005 ogbn-arxiv 2 1 0 regular ~/MassiveGNN ~/MassiveGNN ~/MassiveGNN/partitions metis ~/.aws/credentials
 ```
-**Note:** Partitions are available in the `s3://massivegnn` bucket. Additionally, sample partitions of the `ogbn-arxiv` dataset, including `1_part` and `2_part`, are provided locally in the `~/MassiveGNN/partitions` directory.
+**Note:** Partitions are available in the `s3://massivegnn` bucket. Additionally, sample partitions of the `ogbn-arxiv` dataset are provided locally in the `~/MassiveGNN/partitions` directory.
  
