@@ -18,8 +18,6 @@ import dgl
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from pympler import muppy, summary
-import yappi
 
 class Trainer:
     def __init__(self, args, device, data, halo_nodes):

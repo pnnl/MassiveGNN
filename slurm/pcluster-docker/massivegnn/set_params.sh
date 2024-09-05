@@ -2,7 +2,7 @@
 
 # Function to display help message
 show_help() {
-    echo "Usage: $0 [MODE] [HIT_RATE] [MODEL] [FP] [DELTA] [ALPHAS] [DATASET_NAME] [NUM_NODES] [NUM_TRAINERS] [NUM_SAMPLER_PROCESSES] [QUEUE] [LOGS_DIR] [DATA_DIR] [PROJ_PATH] [PARTITION_DIR] [PARTITION_METHOD]"
+    echo "Usage: $0 [MODE] [HIT_RATE] [MODEL] [FP] [DELTA] [ALPHAS] [DATASET_NAME] [NUM_NODES] [NUM_TRAINERS] [NUM_SAMPLER_PROCESSES] [QUEUE] [LOGS_DIR] [PROJ_PATH] [PARTITION_DIR] [PARTITION_METHOD]"
     echo
     echo "Arguments:"
     echo "  MODE                 Execution mode, either 'cpu' or 'gpu'."
@@ -17,13 +17,12 @@ show_help() {
     echo "  NUM_SAMPLER_PROCESSES Number of sampler processes to be used."
     echo "  QUEUE                SLURM queue name (e.g., 'regular' or 'debug')."
     echo "  LOGS_DIR             Path to SLURM logs."
-    echo "  DATA_DIR             Directory where the input graph data is stored."
     echo "  PROJ_PATH            Path to the project directory."
     echo "  PARTITION_DIR        Directory where the partitioned graphs are stored."
-    echo "  PARTITION_METHOD     Method to partition the dataset (e.g., 'metis')."
+    echo "  AWS                  Path to AWS Credential"
     echo
     echo "Example:"
-    echo "  $0 gpu true sage 0.25 32 0.005 ogbn-products '2 4 8' 2 4 regular '~/MassiveGNN' '~/MassiveGNN/dataset' '~/MassiveGNN' '~/MassiveGNN/partitions' 'metis'"
+    echo "  $0 gpu true sage 0.25 32 0.005 ogbn-arxiv 2 1 0 regular ~/MassiveGNN ~/MassiveGNN ~/MassiveGNN/partitions metis ~/.aws/credentials"
     echo
 }
 
@@ -47,14 +46,20 @@ NUM_TRAINERS=$9
 NUM_SAMPLER_PROCESSES=${10}
 QUEUE=${11}
 LOGS_DIR=${12}
-DATA_DIR=${13}
-PROJ_PATH=${14}
-PARTITION_DIR=${15}
-PARTITION_METHOD=${16}
-PARTITION_DIR="${PARTITION_DIR}/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts/${DATASET_NAME}.json"
+PROJ_PATH=${13}
+PARTITION_DIR=${14}
+PARTITION_METHOD=${15}
+AWS_FILE=${16}
+
+echo $AWS_FILE
+# Extracting the values from the credentials file
+AWS_ACCESS_KEY_ID=$(grep -A 3 "\[622093707179_AdministratorAccess\]" "$AWS_FILE" | grep aws_access_key_id | cut -d '=' -f 2 | xargs)
+AWS_SECRET_ACCESS_KEY=$(grep -A 3 "\[622093707179_AdministratorAccess\]" "$AWS_FILE" | grep aws_secret_access_key | cut -d '=' -f 2 | xargs)
+AWS_SESSION_TOKEN=$(grep -A 3 "\[622093707179_AdministratorAccess\]" "$AWS_FILE" | grep aws_session_token | cut -d '=' -f 2 | xargs)
+PARTITION_DIR="${PARTITION_DIR}/${PARTITION_METHOD}/${DATASET_NAME}/${NUM_NODES}_parts/"
 
 # Validate that all required arguments are provided
-if [ -z "$MODE" ] || [ -z "$HIT_RATE" ] || [ -z "$MODEL" ] || [ -z "$FP" ] || [ -z "$DELTA" ] || [ -z "$ALPHAS" ] || [ -z "$DATASET_NAME" ] || [ -z "$NUM_NODES" ] || [ -z "$NUM_TRAINERS" ] || [ -z "$NUM_SAMPLER_PROCESSES" ] || [ -z "$QUEUE" ] || [ -z "$LOGS_DIR" ] || [ -z "$DATA_DIR" ] || [ -z "$PROJ_PATH" ] || [ -z "$PARTITION_DIR" ] || [ -z "$PARTITION_METHOD" ]; then
+if [ -z "$MODE" ] || [ -z "$HIT_RATE" ] || [ -z "$MODEL" ] || [ -z "$FP" ] || [ -z "$DELTA" ] || [ -z "$ALPHAS" ] || [ -z "$DATASET_NAME" ] || [ -z "$NUM_NODES" ] || [ -z "$NUM_TRAINERS" ] || [ -z "$NUM_SAMPLER_PROCESSES" ] || [ -z "$QUEUE" ] || [ -z "$LOGS_DIR" ] || [ -z "$PROJ_PATH" ] || [ -z "$PARTITION_DIR" ]; then
     echo "Error: One or more required arguments are missing."
     show_help
     exit 1
@@ -67,11 +72,12 @@ for fp in "${FP[@]}"; do
         for alpha in "${ALPHAS[@]}"; do
             echo "Submitting job for $NUM_NODES nodes with prefetch fraction $fp, delta $delta, alpha $alpha"
             if [ "$MODE" == "cpu" ]; then
-                bash submit.sh cpu gloo "$fp" "$delta" "$alpha" "$HIT_RATE" "$DATASET_NAME" "$NUM_NODES" "$NUM_TRAINERS" "$NUM_SAMPLER_PROCESSES" "$MODEL" "$QUEUE" "$LOGS_DIR" "$DATA_DIR" "$PROJ_PATH" "$PARTITION_DIR" \
-                "$PARTITION_METHOD"
+                bash submit.sh cpu gloo "$fp" "$delta" "$alpha" "$HIT_RATE" "$DATASET_NAME" "$NUM_NODES" "$NUM_TRAINERS" "$NUM_SAMPLER_PROCESSES" "$MODEL" "$QUEUE" "$LOGS_DIR" "$PROJ_PATH" "$PARTITION_DIR" \
+                "$PARTITION_METHOD" "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" "$AWS_SESSION_TOKEN"
             elif [ "$MODE" == "gpu" ]; then
-                bash submit.sh gpu nccl "$fp" "$delta" "$alpha" "$HIT_RATE" "$DATASET_NAME" "$NUM_NODES" "$NUM_TRAINERS" "$NUM_SAMPLER_PROCESSES" "$MODEL" "$QUEUE" "$LOGS_DIR" "$DATA_DIR" "$PROJ_PATH" "$PARTITION_DIR" \
-                "$PARTITION_METHOD"
+                cmd="submit.sh gpu nccl "$fp" "$delta" "$alpha" "$HIT_RATE" "$DATASET_NAME" "$NUM_NODES" "$NUM_TRAINERS" "$NUM_SAMPLER_PROCESSES" "$MODEL" "$QUEUE" "$LOGS_DIR" "$PROJ_PATH" "$PARTITION_DIR" \
+                "$PARTITION_METHOD" "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" "$AWS_SESSION_TOKEN""
+                bash $cmd
             else
                 echo "Invalid mode: choose either 'cpu' or 'gpu'"
                 exit 1

@@ -20,12 +20,11 @@ PREFETCH_FRACTION=${10}
 ALPHA=${11}
 HIT_RATE=${12}
 MODEL=${13}
-DATA_DIR=${14}
-PROJ_PATH=${15}
-PARTITION_DIR=${16}
-AWS_ACCESS_KEY_ID=${17}
-AWS_SECRET_ACCESS_KEY=${18}
-AWS_SESSION_TOKEN=${19}
+PROJ_PATH=${14}
+PARTITION_DIR=${15}
+AWS_ACCESS_KEY_ID=${16}
+AWS_SECRET_ACCESS_KEY=${17}
+AWS_SESSION_TOKEN=${18}
 
 
 TOTAL_GPUS=$(($GPUS_PER_NODE * $NUM_NODES)) # total number of GPUs
@@ -47,7 +46,6 @@ echo "Number of Sampler Processes: $SAMPLER_PROCESSES" >> $SUMMARYFILE
 echo "Total GPUs: $TOTAL_GPUS" >> $SUMMARYFILE
 echo "Total Nodes: $NUM_NODES" >> $SUMMARYFILE
 echo "GPUs per Node: $GPUS_PER_NODE" >> $SUMMARYFILE
-echo "Data Directory: $DATA_DIR" >> $SUMMARYFILE
 echo "Project Path: $PROJ_PATH" >> $SUMMARYFILE
 echo "Partition Directory: $PARTITION_DIR" >> $SUMMARYFILE
 echo "IP Config File: $IP_CONFIG_FILE" >> $SUMMARYFILE
@@ -100,12 +98,13 @@ echo "Numba Threads: $NUMBA_THREADS"
 
 echo "JOBID: $JOBID"
 
-export $AWS_ACCESS_KEY_ID
-export $AWS_SECRET_ACCESS_KEY
-export $AWS_SESSION_TOKEN
+aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+aws configure set aws_session_token $AWS_SESSION_TOKEN
+
 
 # Pull data from S3 outside Docker
-aws s3 cp --recursive $S3_PARTITION_PATH/${DATASET_NAME}/${NUM_NODES}_parts $PROJ_PATH/partitions/${DATASET_NAME}/${NUM_NODES}_parts/
+aws s3 cp --recursive $S3_PARTITION_PATH/${DATASET_NAME}/${NUM_NODES}_parts $PARTITION_DIR --profile 622093707179_AdministratorAccess
 
 echo "Stopping and removing existing containers..."
 srun --nodes=$SLURM_JOB_NUM_NODES bash -c "
@@ -147,13 +146,13 @@ if [ "$MODEL" == "sage" ]; then
     --num_trainers $GPUS_PER_NODE \
     --num_samplers $SAMPLER_PROCESSES \
     --num_servers 1 \
-    --part_config $PARTITION_DIR \
+    --part_config $PARTITION_DIR/${DATASET_NAME}.json \
     --ip_config  $IP_CONFIG_FILE \
     --num_omp_threads $OMP_THREADS \
     --docker_container dgl_container \
     "python3 massivegnn/main.py --graph_name $DATASET_NAME \
     --backend $BACKEND \
-    --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
+    --ip_config $IP_CONFIG_FILE --num_epochs 2 --batch_size 2000 \
     --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
     --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA \
     --eviction $EVICTION \
@@ -169,7 +168,7 @@ if [ "$MODEL" == "gat" ]; then
     --num_trainers $GPUS_PER_NODE \
     --num_samplers $SAMPLER_PROCESSES \
     --num_servers 1 \
-    --part_config $PARTITION_DIR \
+    --part_config $PARTITION_DIR/${DATASET_NAME}.json \
     --ip_config  $IP_CONFIG_FILE \
     --num_omp_threads $OMP_THREADS \
     --docker_container dgl_container \

@@ -369,20 +369,41 @@ def main(args):
     test_acc_tensor = calculate_mean(test_acc, device)
     total_epoch_time_tensor = sum(absolute_total_time['epoch_time'], device)
 
-    # Write individual rank's total epoch time to args.summary_filepath
-    with open(args.summary_filepath, "a") as f:
-        f.write(
-            "\n"
-            f"Rank {g.rank()} | TotalEpochTime {absolute_total_time['epoch_time']:.4f}s"
-            f"| ForwardTime {absolute_total_time['forward_time']:.4f}s"
-            f"| RpcTime {absolute_total_time['rpc_time']:.4f}s"
-            f"| BackwardTime {absolute_total_time['backward_time']:.4f}s"
-            f"| UpdateTime {absolute_total_time['update_time']:.4f}s"
-            f"| SampleTime {absolute_total_time['sample_time']:.4f}s"
-            f"| EvalTime {absolute_total_time['eval_time']:.4f}s"
-            f"| EpochTime80Percent {absolute_total_time['epoch_time_80_percent']:.4f}s"
-            "\n"
-        )
+    # Generate the summary string for the current rank
+    summary_str = (
+        f"\n"
+        f"Rank {g.rank()} | TotalEpochTime {absolute_total_time['epoch_time']:.4f}s"
+        f"| ForwardTime {absolute_total_time['forward_time']:.4f}s"
+        f"| RpcTime {absolute_total_time['rpc_time']:.4f}s"
+        f"| BackwardTime {absolute_total_time['backward_time']:.4f}s"
+        f"| UpdateTime {absolute_total_time['update_time']:.4f}s"
+        f"| SampleTime {absolute_total_time['sample_time']:.4f}s"
+        f"| EvalTime {absolute_total_time['eval_time']:.4f}s"
+        f"| EpochTime80Percent {absolute_total_time['epoch_time_80_percent']:.4f}s"
+        "\n"
+    )
+
+    # Prepare to gather the summary strings to rank 0
+    gathered_summaries = None
+
+    if g.rank() == 0:
+        # Rank 0 will gather summaries from all ranks, including its own
+        gathered_summaries = [None] * th.distributed.get_world_size()
+
+    # Gather the summary strings from all ranks to rank 0
+    th.distributed.gather_object(
+        summary_str,  # The object to send (for all ranks)
+        gathered_summaries,  # Only for rank 0, where gathered objects will be stored
+        dst=0  # Gather to rank 0
+    )
+
+    # Rank 0 writes all summaries to the file
+    if g.rank() == 0:
+        with open(args.summary_filepath, "a") as f:
+            for summary in gathered_summaries:
+                if summary is not None:
+                    print(f"Rank 0 | Writing gathered summaries to {args.summary_filepath}")
+                    f.write(summary)
     # print the final summary
     if th.distributed.get_rank() == 0:
         print("Average training time across processes: {:.4f} seconds".format(epoch_time_tensor))

@@ -115,11 +115,9 @@ def main(args):
     eval_time_tensor = utils.calculate_mean(eval_time, device)
     test_acc_tensor = utils.calculate_mean(test_acc, device) 
     total_epoch_time_tensor = utils.sum(absolute_total_time['epoch_time'], device)
-
-    # Write individual rank's total epoch time to args.summary_filepath
-    with open(args.summary_filepath, "a") as f:
-        f.write(
-            "\n"
+    # Generate the summary string for the current rank
+    summary_str = (
+        "\n"
             f"Rank {g.rank()} | TotalEpochTime {absolute_total_time['epoch_time']:.4f}s"
             f"| HitRate {hit_rate:.4f} | MissRate {miss_rate:.4f}"
             f"| ForwardTime {absolute_total_time['forward_time']:.4f}s"
@@ -134,7 +132,31 @@ def main(args):
             f"| EvictionTime {prefetch_time['eviction_time']:.4f}s"
             f"| RPCTime {prefetch_time['rpc_time']:.4f}s"
             "\n"
-        )
+    )
+
+    # Prepare to gather the summary strings to rank 0
+    gathered_summaries = None
+
+    if g.rank() == 0:
+        # Rank 0 will gather summaries from all ranks, including its own
+        gathered_summaries = [None] * th.distributed.get_world_size()
+
+    # Gather the summary strings from all ranks to rank 0
+    th.distributed.gather_object(
+        summary_str,  # The object to send (for all ranks)
+        gathered_summaries,  # Only for rank 0, where gathered objects will be stored
+        dst=0  # Gather to rank 0
+    )
+
+    # Rank 0 writes all summaries to the file
+    if g.rank() == 0:
+        with open(args.summary_filepath, "a") as f:
+            for summary in gathered_summaries:
+                if summary is not None:
+                    print(f"Rank 0 | Writing gathered summaries to {args.summary_filepath}")
+                    f.write(summary)
+
+
     # print the final summary
     if th.distributed.get_rank() == 0:
         print("Average training time across processes: {:.4f} seconds".format(epoch_time_tensor))
@@ -194,7 +216,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.003)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument(
-        "--local_rank", type=int, help="get rank of the process"
+        "--local-rank", type=int, help="get rank of the process"
     )
     parser.add_argument(
         "--pad-data",
