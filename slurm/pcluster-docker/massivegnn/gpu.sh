@@ -140,48 +140,82 @@ srun --nodes=$SLURM_JOB_NUM_NODES bash -c "
 "
 
 if [ "$MODEL" == "sage" ]; then
-    echo "Running SAGE model..."
-    python3 $PROJ_PATH/launch.py \
-    --workspace $PROJ_PATH \
-    --num_trainers $GPUS_PER_NODE \
-    --num_samplers $SAMPLER_PROCESSES \
-    --num_servers 1 \
-    --part_config $PARTITION_DIR/${DATASET_NAME}.json \
-    --ip_config  $IP_CONFIG_FILE \
-    --num_omp_threads $OMP_THREADS \
-    --docker_container dgl_container \
-    "python3 massivegnn/main.py --graph_name $DATASET_NAME \
-    --backend $BACKEND \
-    --ip_config $IP_CONFIG_FILE --num_epochs 2 --batch_size 2000 \
-    --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
-    --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA \
-    --eviction $EVICTION \
-    --num_numba_threads $NUMBA_THREADS \
-    --hit_rate_flag $HIT_RATE \
-    --model $MODEL"
+    if  [ "$NUM_NODES" -gt 1 ]; then
+        echo "Running MassiveGNN SAGE model..."
+        python3 $PROJ_PATH/launch.py \
+        --workspace $PROJ_PATH \
+        --num_trainers $GPUS_PER_NODE \
+        --num_samplers $SAMPLER_PROCESSES \
+        --num_servers 1 \
+        --part_config $PARTITION_DIR/${DATASET_NAME}.json \
+        --ip_config  $IP_CONFIG_FILE \
+        --num_omp_threads $OMP_THREADS \
+        --docker_container dgl_container \
+        "python3 massivegnn/main.py --graph_name $DATASET_NAME \
+        --backend $BACKEND \
+        --ip_config $IP_CONFIG_FILE --num_epochs 2 --batch_size 2000 \
+        --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
+        --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA \
+        --eviction $EVICTION \
+        --num_numba_threads $NUMBA_THREADS \
+        --hit_rate_flag $HIT_RATE \
+        --model $MODEL"
+    else
+        echo "MassiveGNN do not support single-node. Switching to baseline SAGE."
+        python3 $PROJ_PATH/launch.py \
+        --workspace $PROJ_PATH \
+        --num_trainers $GPUS_PER_NODE \
+        --num_samplers $SAMPLER_PROCESSES \
+        --num_servers 1 \
+        --part_config $PARTITION_DIR/${DATASET_NAME}.json \
+        --ip_config  $IP_CONFIG_FILE \
+        --docker_container dgl_container \
+        "python3 baseline/node_classification.py --graph_name $DATASET_NAME \
+        --backend $BACKEND \
+        --ip_config $IP_CONFIG_FILE --num_epochs 2 --batch_size 2000 \
+        --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
+        "
+    fi
 fi
 
 if [ "$MODEL" == "gat" ]; then
-    echo "Running GAT model..."
-    $PYTHON_PATH $PROJ_PATH/launch.py \
-    --workspace $PROJ_PATH \
-    --num_trainers $GPUS_PER_NODE \
-    --num_samplers $SAMPLER_PROCESSES \
-    --num_servers 1 \
-    --part_config $PARTITION_DIR/${DATASET_NAME}.json \
-    --ip_config  $IP_CONFIG_FILE \
-    --num_omp_threads $OMP_THREADS \
-    --docker_container dgl_container \
-    "$PYTHON_PATH massivegnn/main.py --graph_name $DATASET_NAME \
-    --backend $BACKEND \
-    --ip_config $IP_CONFIG_FILE --num_epochs 100 --batch_size 2000 \
-    --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
-    --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA \
-    --eviction $EVICTION \
-    --num_numba_threads $NUMBA_THREADS \
-    --hit_rate_flag $HIT_RATE \
-    --model $MODEL \
-    --num_heads 2"
+    if  [ "$NUM_NODES" -gt 1 ]; then
+        echo "Running MassiveGNN GAT model..."
+        python3 $PROJ_PATH/launch.py \
+        --workspace $PROJ_PATH \
+        --num_trainers $GPUS_PER_NODE \
+        --num_samplers $SAMPLER_PROCESSES \
+        --num_servers 1 \
+        --part_config $PARTITION_DIR/${DATASET_NAME}.json \
+        --ip_config  $IP_CONFIG_FILE \
+        --num_omp_threads $OMP_THREADS \
+        --docker_container dgl_container \
+        "python3 massivegnn/main.py --graph_name $DATASET_NAME \
+        --backend $BACKEND \
+        --ip_config $IP_CONFIG_FILE --num_epochs 2 --batch_size 2000 \
+        --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
+        --prefetch_fraction $PREFETCH_FRACTION --eviction_period $EVICTION_PERIOD --alpha $ALPHA \
+        --eviction $EVICTION \
+        --num_numba_threads $NUMBA_THREADS \
+        --hit_rate_flag $HIT_RATE \
+        --model $MODEL \
+        --num_heads 2"
+    else
+        echo "MassiveGNN do not support single-node. Switching to baseline GAT."
+        python3 $PROJ_PATH/launch.py \
+        --workspace $PROJ_PATH \
+        --num_trainers $GPUS_PER_NODE \
+        --num_samplers $SAMPLER_PROCESSES \
+        --num_servers 1 \
+        --part_config $PARTITION_DIR/${DATASET_NAME}.json \
+        --ip_config  $IP_CONFIG_FILE \
+        --docker_container dgl_container \
+        "python3 baseline/node_classification.py --graph_name $DATASET_NAME \
+        --backend $BACKEND \
+        --ip_config $IP_CONFIG_FILE --num_epochs 2 --batch_size 2000 \
+        --num_gpus $GPUS_PER_NODE --summary_filepath $SUMMARYFILE \
+        --num_heads 2"
+    fi
 fi
 
 # Stop the Docker container after the job is done

@@ -10,7 +10,7 @@ MassiveGNN is a framework designed to accelerate the training of Graph Neural Ne
 
 ## Getting Started
 
-To install the required dependencies and DGL (Deep Graph Library), follow the steps below. If you wish to run MassiveGNN using DGL's container please refer to [this README](/slurm/pcluster-docker/README.md).
+To install the required dependencies and DGL (Deep Graph Library), follow the steps below. If you wish to run MassiveGNN using DGL's container please refer to [this README](/slurm/pcluster-docker).
 
 ### Prerequisites
 

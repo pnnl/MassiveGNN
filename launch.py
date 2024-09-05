@@ -311,7 +311,7 @@ def wrap_udf_in_torch_dist_launcher(
     for candidate_python_bin in python_bin_allowlist:
         if candidate_python_bin in udf_command:
             python_bin = candidate_python_bin
-            print(python_bin)
+            # print(python_bin)
             break
 
     nsys_str = "nsys profile"
@@ -343,7 +343,7 @@ def wrap_udf_in_torch_dist_launcher(
         new_udf_command = udf_command.replace(
             python_bin, f"{python_bin} {torch_dist_cmd}"
         )
-    print(new_udf_command)
+    # print(new_udf_command)
     return new_udf_command
 
 
@@ -653,8 +653,8 @@ def submit_jobs(args, udf_command, dry_run=False):
                     cmd, state_q, ip, args.ssh_port, username=args.ssh_username
                 )
             )
-            print("Client commands: ", clients_cmd)
-            print("Server commands: ", servers_cmd)
+            # print("Client commands: ", clients_cmd)
+            # print("Server commands: ", servers_cmd)
 
 
     # return commands of clients/servers directly if in dry run mode
