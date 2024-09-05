@@ -8,9 +8,9 @@
 ## Description
 MassiveGNN is a framework designed to accelerate the training of Graph Neural Networks (GNNs) on large-scale, massively connected distributed graphs. Built on top of DistDGL, it utilizes a dynamic prefetching and eviction strategy to optimize remote data fetching and processing and significantly reduces the training time for GNN models on distributed memory systems, enabling efficient and scalable training of large graph datasets.
 
-## Installation
+## Getting Started
 
-To install the required dependencies and DGL (Deep Graph Library), follow the steps below:
+To install the required dependencies and DGL (Deep Graph Library), follow the steps below. If you wish to run MassiveGNN using DGL's container please refer to [this README](/slurm/pcluster-docker/README.md).
 
 ### Prerequisites
 
